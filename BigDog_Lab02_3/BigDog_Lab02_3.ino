@@ -104,7 +104,8 @@ float Pi = 3.14159;
 int posX = 0;
 int posY = 0;
 int currentAngle = 0;
-int speed = 3000;
+int speed = 500;
+int CONST_SPD = 500;
 
 //define the constant and variables
 #define FRONT 0
@@ -133,7 +134,7 @@ int16_t trig_EchoPin[2] = { 3,4 };
  
 //define values for sensor distances
 //In order: Forward, Back, Left, Right, ForwardRight, ForwardLeft
-int16_t Sensor_Distances[6] = {100000, 100000, 100000, 100000, 100000, 100000};
+int Sensor_Distances[6] = {100000, 100000, 100000, 100000, 100000, 100000};
 bool Object_in_Range = false;
  
  
@@ -277,7 +278,7 @@ void moveL(float distance, int speed){
   }
   Serial.println(steps);
   stepperLeft.moveTo(steps);//move number of steps forward relative to current position
-  stepperLeft.setSpeed(speed);//set right motor speed
+  stepperLeft.setSpeed(speed);//set left motor speed
   stepperLeft.runSpeedToPosition();//move right motor
 }
 // takes in distance in feet and convert it into steps
@@ -377,8 +378,8 @@ void spin(int direction) {
     moveR(-distance, speed); //set right motor ccw
     moveL(distance, speed); //set left motor cw
   }
-//  Serial.println("Spin");
-  runToStop();//run until the robot reaches the target
+  Serial.println(speed);
+  steppers.runSpeedToPosition();//run until the robot reaches the target
 }
  
 /*
@@ -514,7 +515,7 @@ void randomWander(){
       distance = 0.5;
     }
 //    Serial.println(distance);
-    reverse(distance);
+    forward(distance);
  
   } else if ((randNumber%2)==0){
 //    Serial.print("even ");
@@ -653,7 +654,7 @@ void Follow() {
       return;
     }
   }
-  float dist = sqrt(pow(X_distance,2) + pow(Y_distance,2)); //distance of point in feet
+  float dist = sqrt(pow(X_distance,2) + pow(Y_distance,2)); //distance of point in cm
   // if (Y_distance != 0)  {
   //   float angle = ((atan2((float)X_distance, (float)Y_distance)) * 180 / Pi); //calculate angle of POI
   //   goToAngle((int)angle);//robot will turn at given angle
@@ -671,12 +672,12 @@ void Follow() {
   if (dist <= 8) {
     return;
   }
-  spd = dist/active_range*1000;
-  if (spd == 0) {
-    spd = speed;
+  speed = dist/active_range*10000;
+  if (speed == 0) {
+    speed = CONST_SPD;
   }
   forward(dist/active_range*0.4);
-  spd = speed;
+  speed = CONST_SPD;
  
   delay(100);
 }
@@ -743,9 +744,9 @@ void Flee() {
   float angle = ((atan2((float)X_distance, (float)Y_distance)) * 180 / Pi); //calculate angle of POI
   goToAngle((int)-angle);//robot will turn at given angle
   //Uses distance from object to calc speed
-  spd = dist/active_range*1000;
-  if (spd == 0) {
-    spd = speed;
+  speed = dist/active_range*1000;
+  if (speed == 0) {
+    speed = CONST_SPD;
   }
   Serial.print("Distance: ");
   Serial.println(active_range/dist*0.25);
@@ -754,7 +755,7 @@ void Flee() {
     distance = 1;
   }
   reverse(distance);
-  spd = speed;
+  speed = CONST_SPD;
  
   delay(100);
 }
@@ -822,6 +823,10 @@ void setup() {
 }
  
 void loop(){
-  Smart_Follow();
-  //delay(wait_time/4);               //wait to move robot or read data
+  Smart_Avoid();
+//randomWander();
+//  Follow();
+// forward(100);
+//  spin(90);
+//  delay(wait_time/4);               //wait to move robot or read data
 }
