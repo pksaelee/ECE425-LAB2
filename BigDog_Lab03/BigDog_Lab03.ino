@@ -804,7 +804,11 @@ void Smart_Avoid() {
   randomWander();
 }
 
-void wallFollow(){
+void wallFollowL(){
+  
+}
+
+void wallFollowR(){
   
 }
 
