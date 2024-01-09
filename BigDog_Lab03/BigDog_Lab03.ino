@@ -255,7 +255,7 @@ void runToStop ( void ) {
    Helper function to move robot
 */
 void moveR(float distance, int speed){
-  Serial.print("Right:  ");
+//  Serial.print("Right:  ");
   stepperRight.setCurrentPosition(0);//sets right motor position to 0
   int steps = 0;
   //First converts the distance we want to travel into number of steps
@@ -264,13 +264,13 @@ void moveR(float distance, int speed){
   } else{// when moving backward
     steps = convertFeetToSteps(distance, 1);
   }
-  Serial.println(steps);
+//  Serial.println(steps);
   stepperRight.moveTo(steps);//move number of steps forward relative to current position
   stepperRight.setSpeed(speed);//set right motor speed
   stepperRight.runSpeedToPosition();//move right motor
 }
 void moveL(float distance, int speed){
-  Serial.print("Left:  ");
+//  Serial.print("Left:  ");
   stepperLeft.setCurrentPosition(0);//sets right motor position to 0
   int steps = 0;
   if(distance>0){// when moving forward
@@ -278,7 +278,7 @@ void moveL(float distance, int speed){
   } else{// when moving backward
     steps = convertFeetToSteps(distance, 1);
   }
-  Serial.println(steps);
+//  Serial.println(steps);
   stepperLeft.moveTo(steps);//move number of steps forward relative to current position
   stepperLeft.setSpeed(speed);//set left motor speed
   stepperLeft.runSpeedToPosition();//move right motor
@@ -380,7 +380,7 @@ void spin(int direction) {
     moveR(-distance, speed); //set right motor ccw
     moveL(distance, speed); //set left motor cw
   }
-  Serial.println(speed);
+//  Serial.println(speed);
   steppers.runSpeedToPosition();//run until the robot reaches the target
 }
  
@@ -517,7 +517,7 @@ void randomWander(){
       distance = 0.5;
     }
 //    Serial.println(distance);
-    forward(distance/2);
+    forward(distance);
  
   } else if ((randNumber%2)==0){
 //    Serial.print("even ");
@@ -601,12 +601,12 @@ void readSensors() {
     } else if (Sensor_Distances[i] > active_range) {
       Sensor_Distances[i] = 0;
     }
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print(Sensor_Distances[i]);
-    Serial.print(" ");
+//    Serial.print(i);
+//    Serial.print(": ");
+//    Serial.print(Sensor_Distances[i]);
+//    Serial.print(" ");
   }
-  Serial.println();
+//  Serial.println();
 }
 
 void Halt() {
@@ -666,8 +666,8 @@ void Follow() {
   // }
   float angle = ((atan2((float)X_distance, (float)Y_distance)) * 180 / Pi); //calculate angle of POI
   goToAngle((int)-angle);//robot will turn at given angle
-  Serial.println();
-  Serial.println(dist);
+//  Serial.println();
+//  Serial.println(dist);
   //Uses distance from object to calc speed
   if (dist <= 8) {
     return;
@@ -689,37 +689,37 @@ void Flee() {
   readSensors();
   //Checks the values of the sensors and removes the ones out of range
   int active_range = 25;
-  Serial.println();
+//  Serial.println();
   //Boundary Conditions
   if (Sensor_Distances[0] == 0 && Sensor_Distances[1] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    Serial.println("Side Walls");
+//    Serial.println("Side Walls");
     reverse(0.5);
     return;
   }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] == 0) {
-    Serial.println("Front Walls");
+//    Serial.println("Front Walls");
     spin(90);
     reverse(0.5);
     return;
   }else if (Sensor_Distances[0] == 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    Serial.println("Forward Free");
+//    Serial.println("Forward Free");
     forward(0.5);
     return;
   }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    Serial.println("Back Free");
+//    Serial.println("Back Free");
     reverse(0.5);
     return;
   }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] == 0) {
-    Serial.println("Right Free");
+//    Serial.println("Right Free");
     spin(90);
     reverse(0.5);
     return;
   }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] != 0) {
-    Serial.println("Left Free");
+//    Serial.println("Left Free");
     spin(-90);
     reverse(0.5);
     return;
   }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    Serial.println("Trapped");
+//    Serial.println("Trapped");
     return;
   }
   //Calculate the angle the robot needs to move
@@ -737,8 +737,8 @@ void Flee() {
   if (speed == 0) {
     speed = CONST_SPD;
   }
-  Serial.print("Distance: ");
-  Serial.println(active_range/dist*0.25);
+//  Serial.print("Distance: ");
+//  Serial.println(active_range/dist*0.25);
   float distance = active_range/dist*0.25;
   if (distance >= 1) {
     distance = 1;
@@ -797,30 +797,26 @@ void wallFollow() {
   readSensors();
   //Runs if there are walls on each side
   if (Sensor_Distances[0] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    Serial.println("Side Walls");
+//    Serial.println("Side Walls");
     if(Sensor_Distances[5] <= 10) {
       if(Sensor_Distances[5] <= 5) {
       spin(-20);
       forward(0.25);
-      return;
     }
       float diff = Sensor_Distances[5] - Sensor_Distances[2];
       float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
-      Serial.println(angle);
+//      Serial.println(angle);
       spin(angle);
-      return;
     }
     if(Sensor_Distances[4] <= 10) {
       if(Sensor_Distances[4] <= 5) {
       spin(20);
       forward(0.25);
-      return;
     }
       float diff = Sensor_Distances[4] - Sensor_Distances[3];
       float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
-      Serial.println(angle);
+//      Serial.println(angle);
       spin(-angle);
-      return;
     }
     forward(0.5);
     return;
@@ -832,12 +828,10 @@ void wallFollow() {
     if(Sensor_Distances[5] <= 5) {
       spin(-20);
       forward(0.25);
-      return;
     }
-     if(Sensor_Distances[5] >= 25) {
+     if(Sensor_Distances[5] >= 30) {
       spin(20);
       forward(0.25);
-      return;
     }
     float diff = Sensor_Distances[5] - Sensor_Distances[2];
     float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
@@ -853,14 +847,11 @@ void wallFollow() {
     if(Sensor_Distances[4] <= 5) {
       spin(20);
       forward(0.25);
-      return;
     }
-     if(Sensor_Distances[4] >= 25) {
+     if(Sensor_Distances[4] >= 30) {
       spin(-20);
       forward(0.25);
-      return;
     }
-    delay(10);
     float diff = Sensor_Distances[4] - Sensor_Distances[3];
     float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
     Serial.println(angle);
@@ -873,59 +864,31 @@ void wallFollow() {
     //Checks which wall we were on before the turn
     if(wall_state == 2) {
       Serial.println("Right turn");
-      forward(0.25);
       spin(-90);
       forward(0.5);
       return;
     } else {
       Serial.println("Left turn");
-      forward(0.25);
       spin(90);
       forward(0.5);
-      return;
     }
   }
   //Check for blind turn
   else if (Sensor_Distances[2] == 0 && Sensor_Distances[3] == 0) {
     if(wall_state == 2) {
+      Serial.println("Wall State: ");
+      Serial.println(wall_state);
       Serial.println("Left turn");
       forward(.75);
       spin(90);
       forward(2);
-      wall_state == 1;
       return;
     } else {
       Serial.println("Right turn");
       forward(.75);
       spin(-90);
       forward(2);
-      wall_state == 1;
-      return;
     }
-  }
-}
-
-void Smartwall() {
-  readSensors();
-  if (Sensor_Distances[2] != 0 && Sensor_Distances[3] == 0) {
-    Serial.println("Left Wall");
-    wall_state = 2;
-  } 
-  if (Sensor_Distances[2] == 0 && Sensor_Distances[3] != 0) {
-    Serial.println("Right Wall");
-    wall_state = 3;
-  }
-  if (Sensor_Distances[0] != 0) {
-    Serial.println("Uhhhh Idk");
-    forward(0.25);
-    wall_state = 3;
-  } 
-  if(wall_state == 1) {
-    Serial.println("Random Wander");
-    randomWander();
-  } else {
-    Serial.println("Wall Found");
-    wallFollow();
   }
 }
 
@@ -949,12 +912,10 @@ void setup() {
 }
  
 void loop() {
-Smartwall();
-
+  wallFollow();
 //randomWander();
 //  Follow();
 // forward(100);
-//spin(10);
-//spin(-10);
+//  spin(90);
 //  delay(wait_time/4);               //wait to move robot or read data
 }
