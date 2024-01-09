@@ -138,7 +138,9 @@ int Sensor_Distances[6] = {100000, 100000, 100000, 100000, 100000, 100000};
 bool Object_in_Range = false;
  
  
-// Helper Functions
+// Wall Follow
+int wall_dist = 25;
+int wall_state = 1;
  
 //interrupt function to count left encoder tickes
 void LwheelSpeed()
@@ -585,19 +587,28 @@ uint16_t readSonar(uint16_t side) {
 void readSensors() {
   //Reads the lidar sensors
   for (int i = 0;i<4;i++){
+    Sensor_Distances[i] = readLidar(i);
+  } 
+    //Reads the left and right sonar
+  Sensor_Distances[4] = readSonar(RIGHT) - 2;
+  Sensor_Distances[5] = readSonar(LEFT) - 2;  
+  
+  //Cuts values past these distances
+  int active_range = 35;
+  for (int i = 0;i<6;i++) {
+    if (Sensor_Distances[i] == 2000) {
+      Sensor_Distances[i] = 0;
+    } else if (Sensor_Distances[i] > active_range) {
+      Sensor_Distances[i] = 0;
+    }
     Serial.print(i);
     Serial.print(": ");
-    Serial.print(readLidar(i));
-    Sensor_Distances[i] = readLidar(i);
+    Serial.print(Sensor_Distances[i]);
     Serial.print(" ");
-    //delay(1);
   }
   Serial.println();
- 
-    //Reads the left and right sonar
-  Sensor_Distances[4] = readSonar(RIGHT);
-  Sensor_Distances[5] = readSonar(LEFT);
 }
+
 void Halt() {
   digitalWrite(redLED, HIGH);//turn off red LED
   digitalWrite(grnLED, LOW);//turn on green LED
@@ -634,17 +645,6 @@ void Follow() {
   readSensors();
   //Checks the values of the sensors and removes the ones out of range
   int active_range = 25;
-  for (int i = 0;i<6;i++) {
-    if (Sensor_Distances[i] == 2000) {
-      Sensor_Distances[i] = 0;
-    } else if (Sensor_Distances[i] > active_range) {
-      Sensor_Distances[i] = 0;
-    }
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print(Sensor_Distances[i]);
-    Serial.print(" ");
-  }
   //Calculate the angle the robot needs to move
   float Y_distance = Sensor_Distances[0] - Sensor_Distances[1] + Sensor_Distances[4]*cos(Pi/4) + Sensor_Distances[5]*cos(Pi/4);
   float X_distance =  Sensor_Distances[3] - Sensor_Distances[2] +  Sensor_Distances[4]*sin(Pi/4) - Sensor_Distances[5]*sin(Pi/4);
@@ -689,17 +689,6 @@ void Flee() {
   readSensors();
   //Checks the values of the sensors and removes the ones out of range
   int active_range = 25;
-  for (int i = 0;i<6;i++) {
-    if (Sensor_Distances[i] == 2000) {
-      Sensor_Distances[i] = 0;
-    } else if (Sensor_Distances[i] > active_range) {
-      Sensor_Distances[i] = 0;
-    }
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print(Sensor_Distances[i]);
-    Serial.print(" ");
-  }
   Serial.println();
   //Boundary Conditions
   if (Sensor_Distances[0] == 0 && Sensor_Distances[1] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
@@ -804,12 +793,101 @@ void Smart_Avoid() {
   randomWander();
 }
 
-void wallFollowL(){
-  
-}
-
-void wallFollowR(){
-  
+void wallFollow() {
+  readSensors();
+  //Runs if there are walls on each side
+  if (Sensor_Distances[0] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
+    Serial.println("Side Walls");
+    if(Sensor_Distances[5] <= 10) {
+      if(Sensor_Distances[5] <= 5) {
+      spin(-20);
+      forward(0.25);
+    }
+      float diff = Sensor_Distances[5] - Sensor_Distances[2];
+      float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
+      Serial.println(angle);
+      spin(angle);
+    }
+    if(Sensor_Distances[4] <= 10) {
+      if(Sensor_Distances[4] <= 5) {
+      spin(20);
+      forward(0.25);
+    }
+      float diff = Sensor_Distances[4] - Sensor_Distances[3];
+      float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
+      Serial.println(angle);
+      spin(-angle);
+    }
+    forward(0.5);
+    return;
+  } 
+  //Runs if there is a wall to the left of the robot
+  else if (Sensor_Distances[0] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] == 0) {
+    Serial.println("Left Wall");
+    wall_state = 2;
+    if(Sensor_Distances[5] <= 5) {
+      spin(-20);
+      forward(0.25);
+    }
+     if(Sensor_Distances[5] >= 30) {
+      spin(20);
+      forward(0.25);
+    }
+    float diff = Sensor_Distances[5] - Sensor_Distances[2];
+    float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
+    Serial.println(angle);
+    spin(angle);
+    forward(0.5);
+    return;
+  } 
+  //Runs if there is a wall to the right of the robot
+  else if (Sensor_Distances[0] == 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] != 0) {
+    wall_state = 3;
+    Serial.println("Right Wall");
+    if(Sensor_Distances[4] <= 5) {
+      spin(20);
+      forward(0.25);
+    }
+     if(Sensor_Distances[4] >= 30) {
+      spin(-20);
+      forward(0.25);
+    }
+    float diff = Sensor_Distances[4] - Sensor_Distances[3];
+    float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
+    Serial.println(angle);
+    spin(-angle);
+    forward(0.5);
+    return;
+  }
+  //Runs if there is a wall in front of the robot
+  else if (Sensor_Distances[0] != 0 ) {
+    //Checks which wall we were on before the turn
+    if(wall_state == 2) {
+      Serial.println("Right turn");
+      spin(-90);
+      forward(0.5);
+      return;
+    } else {
+      Serial.println("Left turn");
+      spin(90);
+      forward(0.5);
+    }
+  }
+  //Check for blind turn
+  else if (Sensor_Distances[2] == 0 && Sensor_Distances[3] == 0) {
+    if(wall_state == 2) {
+      Serial.println("Left turn");
+      forward(.75);
+      spin(90);
+      forward(2);
+      return;
+    } else {
+      Serial.println("Right turn");
+      forward(.75);
+      spin(-90);
+      forward(2);
+    }
+  }
 }
 
 //// MAIN
@@ -831,8 +909,8 @@ void setup() {
   delay(pauseTime); //always wait 2.5 seconds before the robot moves
 }
  
-void loop(){
-  Smart_Avoid();
+void loop() {
+  wallFollow();
 //randomWander();
 //  Follow();
 // forward(100);
