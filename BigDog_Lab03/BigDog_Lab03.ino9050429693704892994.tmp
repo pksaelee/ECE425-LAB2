@@ -10,7 +10,7 @@
 ***********************************
   BigDog_Lab02.ino
   Carlotta Berry 11.21.16
-
+ 
   This program will introduce using the stepper motor library to create motion algorithms for the robot.
   The motions will be go to angle, go to goal, move in a circle, square, figure eight and teleoperation (stop, forward, spin, reverse, turn)
   It will also include wireless commmunication for remote control of the robot by using a game controller or serial monitor.
@@ -22,73 +22,73 @@
   spin - both wheels move with same velocity opposite direction
   turn - both wheels move with same direction different velocity
   stop -both wheels stationary
-
+ 
   Interrupts
   https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
   https://www.arduino.cc/en/Tutorial/CurieTimer1Interrupt
   https://playground.arduino.cc/code/timer1
   https://playground.arduino.cc/Main/TimerPWMCheatsheet
   http://arduinoinfo.mywikis.net/wiki/HOME
-
+ 
   Hardware Connections:
   Arduino pin mappings: https://docs.arduino.cc/tutorials/giga-r1-wifi/cheat-sheet#pins
   A4988 Stepper Motor Driver Pinout: https://www.pololu.com/product/1182
-
+ 
   digital pin 48 - enable PIN on A4988 Stepper Motor Driver StepSTICK
   digital pin 50 - right stepper motor step pin
   digital pin 51 - right stepper motor direction pin
   digital pin 52 - left stepper motor step pin
   digital pin 53 - left stepper motor direction pin
   digital pin 13 - enable LED on microcontroller
-
+ 
   digital pin 5 - red LED in series with 220 ohm resistor
   digital pin 6 - green LED in series with 220 ohm resistor
   digital pin 7 - yellow LED in series with 220 ohm resistor
-
+ 
   digital pin 18 - left encoder pin
   digital pin 19 - right encoder pin
-
+ 
   INSTALL THE LIBRARY
   AccelStepper Library: https://www.airspayce.com/mikem/arduino/AccelStepper/
-
+ 
   Sketch->Include Library->Manage Libraries...->AccelStepper->Include
   OR
   Sketch->Include Library->Add .ZIP Library...->AccelStepper-1.53.zip
   See PlatformIO documentation for proper way to install libraries in Visual Studio
 */
-
+ 
 //includew all necessary libraries
 #include <Arduino.h>//include for PlatformIO Ide
 #include <AccelStepper.h>//include the stepper motor library
 #include <MultiStepper.h>//include multiple stepper motor library
-
+ 
 //state LEDs connections
 #define redLED 7            //red LED for displaying states
 #define grnLED 5            //green LED for displaying states
 #define ylwLED 6            //yellow LED for displaying states
 #define enableLED 13        //stepper enabled LED
 int leds[3] = {5, 6, 7};    //array of LED pin numbers
-
+ 
 //define motor pin numbers
 #define stepperEnable 48    //stepper enable pin on stepStick
 #define rtStepPin 50 //right stepper motor step pin
 #define rtDirPin 51  // right stepper motor direction pin
 #define ltStepPin 52 //left stepper motor step pin
 #define ltDirPin 53  //left stepper motor direction pin
-
+ 
 AccelStepper stepperRight(AccelStepper::DRIVER, rtStepPin, rtDirPin);//create instance of right stepper motor object (2 driver pins, low to high transition step pin 52, direction input pin 53 (high means forward)
 AccelStepper stepperLeft(AccelStepper::DRIVER, ltStepPin, ltDirPin);//create instance of left stepper motor object (2 driver pins, step pin 50, direction input pin 51)
 MultiStepper steppers;//create instance to control multiple steppers at the same time
-
+ 
 #define stepperEnTrue false //variable for enabling stepper motor
 #define stepperEnFalse true //variable for disabling stepper motor
 #define max_speed 1500 //maximum stepper motor speed
 #define max_accel 10000 //maximum motor acceleration
-
+ 
 int pauseTime = 2500;   //time before robot moves
 int stepTime = 500;     //delay time between high and low on step pin
 int wait_time = 1000;   //delay for printing data
-
+ 
 //define encoder pins
 #define LEFT 0        //left encoder
 #define RIGHT 1       //right encoder
@@ -97,7 +97,7 @@ const int rtEncoder = 19;        //right encoder pin (Mega Interrupt pins 2,3 18
 volatile long encoder[2] = {0, 0};  //interrupt variable to hold number of encoder counts (left, right)
 int lastSpeed[2] = {0, 0};          //variable to hold encoder speed (left, right)
 int accumTicks[2] = {0, 0};         //variable to hold accumulated ticks since last reset
-
+ 
 //define values movement
 float Wheel_Dist = 9.5 / 12.0; //feet
 float Pi = 3.14159;
@@ -113,53 +113,53 @@ int CONST_SPD = 500;
 #define LEFT 2
 #define RIGHT 3
 #define numOfSens 4
-
+ 
 //define values for lidar and sonar
 uint16_t wait = 100;
 int16_t ft_lidar = 8;
 int16_t bk_lidar = 9;
 int16_t lt_lidar = 10;
 int16_t rt_lidar = 11;
-int16_t lidar_pins[4] = {ft_lidar, bk_lidar, lt_lidar, rt_lidar};
-
+int16_t lidar_pins[4] = {ft_lidar,bk_lidar,lt_lidar,rt_lidar};
+ 
 //define the constant and variables
 #define VELOCITY_TEMP(temp) ((331.5 + 0.6 * (float)(temp)) * 100 / 1000000.0)  // The ultrasonic velocity (cm/us) compensated by temperature
 #define RIGHT 0
 #define LEFT 1
-
+ 
 int16_t rt_trigechoPin = 3;
 int16_t lt_trigechoPin = 4;
-int16_t trig_EchoPin[2] = { 3, 4 };
+int16_t trig_EchoPin[2] = { 3,4 };
 //uint16_t wait = 250;
-
+ 
 //define values for sensor distances
 //In order: Forward, Back, Left, Right, ForwardRight, ForwardLeft
 int Sensor_Distances[6] = {100000, 100000, 100000, 100000, 100000, 100000};
 bool Object_in_Range = false;
-
-
+ 
+ 
 // Wall Follow
 int wall_dist = 25;
 int wall_state = 1;
-
+ 
 //interrupt function to count left encoder tickes
 void LwheelSpeed()
 {
   encoder[LEFT] ++;  //count the left wheel encoder interrupts
 }
-
+ 
 //interrupt function to count right encoder ticks
 void RwheelSpeed()
 {
   encoder[RIGHT] ++; //count the right wheel encoder interrupts
 }
-
+ 
 void allOFF() {
   for (int i = 0; i < 3; i++) {
     digitalWrite(leds[i], LOW);
   }
 }
-
+ 
 //function to set all stepper motor variables, outputs and LEDs
 void init_stepper() {
   pinMode(rtStepPin, OUTPUT);//sets pin as output
@@ -180,7 +180,7 @@ void init_stepper() {
   digitalWrite(redLED, LOW);//turn off red LED
   digitalWrite(ylwLED, LOW);//turn off yellow LED
   digitalWrite(grnLED, LOW);//turn off green LED
-
+ 
   stepperRight.setMaxSpeed(max_speed);//set the maximum permitted speed limited by processor and clock speed, no greater than 4000 steps/sec on Arduino
   stepperRight.setAcceleration(max_accel);//set desired acceleration in steps/s^2
   stepperLeft.setMaxSpeed(max_speed);//set the maximum permitted speed limited by processor and clock speed, no greater than 4000 steps/sec on Arduino
@@ -190,7 +190,7 @@ void init_stepper() {
   digitalWrite(stepperEnable, stepperEnTrue);//turns on the stepper motor driver
   digitalWrite(enableLED, HIGH);//turn on enable LED
 }
-
+ 
 //function prints encoder data to serial monitor
 void print_encoder_data() {
   static unsigned long timer = 0;                           //print manager timer
@@ -214,19 +214,19 @@ void print_encoder_data() {
     timer = millis();                           //record current time since program started
   }
 }
-
+ 
 /*function to run both wheels to a position at speed*/
 void runAtSpeedToPosition() {
   stepperRight.runSpeedToPosition();
   stepperLeft.runSpeedToPosition();
 }
-
+ 
 /*function to run both wheels continuously at a speed*/
 void runAtSpeed ( void ) {
   while (stepperRight.runSpeed() || stepperLeft.runSpeed()) {
   }
 }
-
+ 
 /*
    This function, runToStop(), will run the robot until the target is achieved and
    then stop it
@@ -235,7 +235,7 @@ void runToStop ( void ) {
   int runNow = 1;
   int rightStopped = 0;
   int leftStopped = 0;
-
+ 
   while (runNow) {
     if (!stepperRight.run()) {
       rightStopped = 1;
@@ -250,35 +250,35 @@ void runToStop ( void ) {
     }
   }
 }
-
+ 
 /*
    Helper function to move robot
 */
-void moveR(float distance, int speed) {
-  //  Serial.print("Right:  ");
+void moveR(float distance, int speed){
+//  Serial.print("Right:  ");
   stepperRight.setCurrentPosition(0);//sets right motor position to 0
   int steps = 0;
   //First converts the distance we want to travel into number of steps
-  if (distance > 0) { // when moving forward
+  if(distance>0){// when moving forward
     steps = convertFeetToSteps(distance, 0);
-  } else { // when moving backward
+  } else{// when moving backward
     steps = convertFeetToSteps(distance, 1);
   }
-  //  Serial.println(steps);
+//  Serial.println(steps);
   stepperRight.moveTo(steps);//move number of steps forward relative to current position
   stepperRight.setSpeed(speed);//set right motor speed
   stepperRight.runSpeedToPosition();//move right motor
 }
-void moveL(float distance, int speed) {
-  //  Serial.print("Left:  ");
+void moveL(float distance, int speed){
+//  Serial.print("Left:  ");
   stepperLeft.setCurrentPosition(0);//sets right motor position to 0
   int steps = 0;
-  if (distance > 0) { // when moving forward
+  if(distance>0){// when moving forward
     steps = convertFeetToSteps(distance, 0);
-  } else { // when moving backward
+  } else{// when moving backward
     steps = convertFeetToSteps(distance, 1);
   }
-  //  Serial.println(steps);
+//  Serial.println(steps);
   stepperLeft.moveTo(steps);//move number of steps forward relative to current position
   stepperLeft.setSpeed(speed);//set left motor speed
   stepperLeft.runSpeedToPosition();//move right motor
@@ -306,10 +306,10 @@ int convertFeetToSteps(float measurement, int direction) {
     //    Serial.println(converted);
     return converted;
   }
-
+ 
 }
-
-//int convert(float measurement, int dir){
+ 
+//int convert(float measurement, int dir){  
 // /* ENCODER FEEDBACK
 //   * One Rotation in Steps = 800
 //   * One Rotation = 40 (ALL match)
@@ -326,7 +326,7 @@ int convertFeetToSteps(float measurement, int direction) {
 //  float stpPerTicRev = 896.0/45.0;
 //  float ticPerFootFwd = 47.0;
 //  float ticPerFootRev = 45.0;
-//
+// 
 //  if(dir == 0){
 //    int converted = steps*measurement;
 //    return converted;
@@ -335,13 +335,13 @@ int convertFeetToSteps(float measurement, int direction) {
 //    return converted;
 //  }
 //}
-
+ 
 /*
   The pivot function will use AccelStepper to move one motor forward and halt the other motor to turn the robot
   based on the angle given
 */
 void pivot(int direction) {
-  //  Serial.println("Pivot");
+//  Serial.println("Pivot");
   digitalWrite(redLED, LOW);//turn off red LED
   digitalWrite(grnLED, HIGH);//turn on green LED
   digitalWrite(ylwLED, HIGH);//turn on yellow LED
@@ -351,14 +351,14 @@ void pivot(int direction) {
   float distance = 2 * Wheel_Dist * Pi * percent_rot; // calculates the distance the motor will travel where Wheel_Dist is the distance between two of the motors
   //Choose which direction we are turning
   if (direction < 0) {// when ccw
-    moveR(distance, speed); //moves only right motor
+    moveR(distance, speed); //moves only right motor  
   }
   else { // when cw
     moveL(distance, speed); //moves only left motor
   }
   runToStop();//run until the robot reaches the target
 }
-
+ 
 /*
   The spin() function will use AccelSteppoer to rotate both motor clockwise or
   counter closewise based on the angle given
@@ -372,7 +372,6 @@ void spin(int direction) {
   float percent_rot = (angle / 360); //gives fraction of angle to full circle
   float distance = Wheel_Dist * Pi * percent_rot; //calculates circumference
   //Choose which direction we are turning
-  currentAngle += direction;
   if (direction > 0) {
     moveR(distance, speed); //set right motor cw
     moveL(-distance, speed); //set left motor ccw
@@ -381,10 +380,10 @@ void spin(int direction) {
     moveR(-distance, speed); //set right motor ccw
     moveL(distance, speed); //set left motor cw
   }
-  //  Serial.println(speed);
+//  Serial.println(speed);
   steppers.runSpeedToPosition();//run until the robot reaches the target
 }
-
+ 
 /*
   The turn() function will use AccelStepper to rotate both motor forward or backwardsa
   at different speeds based on the angle given
@@ -425,11 +424,6 @@ void forward(float distance) {
   moveR(distance, speed); //set right motor
   moveL(distance, speed); //set left motor
   steppers.runSpeedToPosition();
-  if(currentAngle == 90 || currentAngle == -90){
-    posY += distance;
-  } else {
-    posX += distance;
-  }
   //runToStop();//run until the robot reaches the target
 }
 /*
@@ -454,19 +448,19 @@ void stop() {
   stepperLeft.stop();//stops left motor
   stepperRight.stop();//stops right motor
 }
-
-
-/* ENCODER FEEDBACK
-    One Rotation in Steps = 800
-    One Rotation = 40 (ALL match)
-    Half Rotation = 21 L 20 R (FWD/REV match)
-    Quarter Rotation = 10 (ALL match)
-    Two Rotation = 80 (ALL match)
-
-    One Foot: Ticks = 45 L 46 R (FWD/REV match)  Steps = 896
-    Two Feet: Ticks = 89 (ALL match)   Steps = 1792
-*/
-
+ 
+ 
+ /* ENCODER FEEDBACK
+   * One Rotation in Steps = 800
+   * One Rotation = 40 (ALL match)
+   * Half Rotation = 21 L 20 R (FWD/REV match)
+   * Quarter Rotation = 10 (ALL match)
+   * Two Rotation = 80 (ALL match)
+   *
+   * One Foot: Ticks = 45 L 46 R (FWD/REV match)  Steps = 896
+   * Two Feet: Ticks = 89 (ALL match)   Steps = 1792
+   */
+ 
 /*
    The goToAngle() functions takes in an angle in degrees as an input and rotates the robot using the spin() function
 */
@@ -493,65 +487,65 @@ void goToGoal(int x, int y) {
   posX = x;
   posY = y;
 }
-
-void returnPos() {
-  long currPos[2] = {posX, posY};
+ 
+void returnPos(){
+  long currPos[2] = {posX,posY};
   int currAng = currentAngle;
-  float dist = sqrt(pow(posX, 2) + pow(posY, 2)); //distance of point in feet
-
+  float dist = sqrt(pow(posX,2) + pow(posY,2)); //distance of point in feet
+ 
   reverse(dist);
   goToAngle(-currAng);
-
+ 
 }
-
-void randomWander() {
+ 
+void randomWander(){
   digitalWrite(redLED, LOW);//turn off red LED
   digitalWrite(grnLED, HIGH);//turn on green LED
   digitalWrite(ylwLED, LOW);//turn off yellow LED
   int maxVal = 1000; //maximum value for random number
-  //  randomSeed(analogRead(0)); //generate a new random number each time called
+//  randomSeed(analogRead(0)); //generate a new random number each time called
   int randNumber = random(maxVal); //generate a random number up to the maximum value
-  int randLR = random(0, 1);
+  int randLR = random(0,1);
   Serial.println("Wandering");
   // max distance = 5 feet
   // max angle = 180 degrees
-  //  Serial.println(randNumber);
-  if ((randNumber % 2) == 1) {
-    //    Serial.print("odd ");
-    float distance = randNumber / 600;
-    if (distance < 1) {
+//  Serial.println(randNumber);
+  if((randNumber%2)==1){
+//    Serial.print("odd ");
+    float distance = randNumber/600;  
+    if(distance < 1){
       distance = 0.5;
     }
-    //    Serial.println(distance);
+//    Serial.println(distance);
     forward(distance);
-
-  } else if ((randNumber % 2) == 0) {
-    //    Serial.print("even ");
-    float angle;
-    if (randNumber > 180) {
-      angle = (randNumber - 820);
-      //        Serial.println(angle);
-      if (angle < 1 && angle > 0) {
+ 
+  } else if ((randNumber%2)==0){
+//    Serial.print("even ");
+    float angle;    
+    if(randNumber > 180){
+      angle = (randNumber-820);
+//        Serial.println(angle);
+      if (angle < 1 && angle > 0){
         angle = 90;
-      } else if ( angle < 0 && angle > -1) {
+      } else if( angle < 0 && angle > -1){
         angle = -90;
       }
-    } else {
-      if (randLR == 0) {
+    }else {
+      if(randLR == 0){
         angle = -randNumber;
-      } else {
+      }else {
         angle = randNumber;
       }
     }
-    //    Serial.println(angle);
+//    Serial.println(angle);
     spin(angle);
   }
 }
-
+ 
 int readLidar(uint16_t side) {
   int16_t t = pulseIn(lidar_pins[side], HIGH);
   int d; //distance to  object
-  if (t == 0) {
+  if (t == 0){
     // pulseIn() did not detect the start of a pulse within 1 second.
     //Serial.println("timeout");
     d = 2000; //no object detected
@@ -563,23 +557,21 @@ int readLidar(uint16_t side) {
   else  {
     // Valid pulse width reading. Convert pulse width in microseconds to distance in millimeters.
     d = (t - 1000) * 3 / 40;
-
+ 
     // Limit minimum distance to 0.
-    if (d < 0) {
-      d = 0;
-    }
+    if (d < 0) { d = 0; }
   }
   //   Serial.print(d);
   // Serial.print(" cm, ");
   return d;
 }
-
+ 
 //this function will read the left or right sensor based upon input value
 uint16_t readSonar(uint16_t side) {
   uint16_t distance;
   uint32_t pulseWidthUs;
   int16_t dist, temp, dist_in;
-
+ 
   pinMode(trig_EchoPin[side], OUTPUT);
   digitalWrite(trig_EchoPin[side], LOW);
   digitalWrite(trig_EchoPin[side], HIGH);  //Set the trig pin High
@@ -588,22 +580,22 @@ uint16_t readSonar(uint16_t side) {
   pinMode(trig_EchoPin[side], INPUT);                //Set the pin to input mode
   pulseWidthUs = pulseIn(trig_EchoPin[side], HIGH);  //Detect the high level time on the echo pin, the output high level time represents the ultrasonic flight time (unit: us)
   distance = pulseWidthUs * VELOCITY_TEMP(20) / 2.0;  //The distance can be calculated according to the flight time of ultrasonic wave,/
-  //and the ultrasonic sound speed can be compensated according to the actual ambient temperature
-  dist_in = 0.394 * distance;  //convert cm to inches
+                                                        //and the ultrasonic sound speed can be compensated according to the actual ambient temperature
+  dist_in = 0.394*distance;    //convert cm to inches
   return distance;
 }
 void readSensors() {
   //Reads the lidar sensors
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0;i<4;i++){
     Sensor_Distances[i] = readLidar(i);
-  }
-  //Reads the left and right sonar
+  } 
+    //Reads the left and right sonar
   Sensor_Distances[4] = readSonar(RIGHT) - 2;
-  Sensor_Distances[5] = readSonar(LEFT) - 2;
-
+  Sensor_Distances[5] = readSonar(LEFT) - 2;  
+  
   //Cuts values past these distances
   int active_range = 35;
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0;i<6;i++) {
     if (Sensor_Distances[i] == 2000) {
       Sensor_Distances[i] = 0;
     } else if (Sensor_Distances[i] > active_range) {
@@ -624,7 +616,7 @@ void Halt() {
   Object_in_Range = false;
   readSensors();
   //Checks every sensor to see if there is an object in range
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0;i<6;i++) {
     Serial.print(i);
     Serial.print(": ");
     Serial.print(Sensor_Distances[i]);
@@ -633,19 +625,19 @@ void Halt() {
     }
     Serial.print(" ");
     //delay(10);
-    if (Sensor_Distances[i] <= 10) {
+    if (Sensor_Distances[i] <= 10){
       Object_in_Range = true;
     }
   }
   //Checks to see if there are any objects in range and if there aren't keep moving
-  if (Object_in_Range == false) {
+  if(Object_in_Range == false) {
     forward(0.7);
   }
-  else {
+  else{
     stop();
   }
 }
-
+ 
 void Follow() {
   digitalWrite(redLED, LOW);//turn off red LED
   digitalWrite(grnLED, HIGH);//turn on green LED
@@ -654,15 +646,15 @@ void Follow() {
   //Checks the values of the sensors and removes the ones out of range
   int active_range = 25;
   //Calculate the angle the robot needs to move
-  float Y_distance = Sensor_Distances[0] - Sensor_Distances[1] + Sensor_Distances[4] * cos(Pi / 4) + Sensor_Distances[5] * cos(Pi / 4);
-  float X_distance =  Sensor_Distances[3] - Sensor_Distances[2] +  Sensor_Distances[4] * sin(Pi / 4) - Sensor_Distances[5] * sin(Pi / 4);
+  float Y_distance = Sensor_Distances[0] - Sensor_Distances[1] + Sensor_Distances[4]*cos(Pi/4) + Sensor_Distances[5]*cos(Pi/4);
+  float X_distance =  Sensor_Distances[3] - Sensor_Distances[2] +  Sensor_Distances[4]*sin(Pi/4) - Sensor_Distances[5]*sin(Pi/4);
   //Check to see if robot is too close to object
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0;i<6;i++) {
     if (Sensor_Distances[i] <= 8 && Sensor_Distances[i] != 0) {
       return;
     }
   }
-  float dist = sqrt(pow(X_distance, 2) + pow(Y_distance, 2)); //distance of point in cm
+  float dist = sqrt(pow(X_distance,2) + pow(Y_distance,2)); //distance of point in cm
   // if (Y_distance != 0)  {
   //   float angle = ((atan2((float)X_distance, (float)Y_distance)) * 180 / Pi); //calculate angle of POI
   //   goToAngle((int)angle);//robot will turn at given angle
@@ -673,23 +665,23 @@ void Follow() {
   //   Serial.println(angle);
   // }
   float angle = ((atan2((float)X_distance, (float)Y_distance)) * 180 / Pi); //calculate angle of POI
-  goToAngle((int) - angle); //robot will turn at given angle
-  //  Serial.println();
-  //  Serial.println(dist);
+  goToAngle((int)-angle);//robot will turn at given angle
+//  Serial.println();
+//  Serial.println(dist);
   //Uses distance from object to calc speed
   if (dist <= 8) {
     return;
   }
-  speed = dist / active_range * 10000;
+  speed = dist/active_range*10000;
   if (speed == 0) {
     speed = CONST_SPD;
   }
-  forward(dist / active_range * 0.4);
+  forward(dist/active_range*0.4);
   speed = CONST_SPD;
-
+ 
   delay(100);
 }
-
+ 
 void Flee() {
   digitalWrite(redLED, LOW);//turn off red LED
   digitalWrite(grnLED, LOW);//turn on green LED
@@ -697,79 +689,79 @@ void Flee() {
   readSensors();
   //Checks the values of the sensors and removes the ones out of range
   int active_range = 25;
-  //  Serial.println();
+//  Serial.println();
   //Boundary Conditions
   if (Sensor_Distances[0] == 0 && Sensor_Distances[1] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    //    Serial.println("Side Walls");
+//    Serial.println("Side Walls");
     reverse(0.5);
     return;
-  } else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] == 0) {
-    //    Serial.println("Front Walls");
+  }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] == 0) {
+//    Serial.println("Front Walls");
     spin(90);
     reverse(0.5);
     return;
-  } else if (Sensor_Distances[0] == 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    //    Serial.println("Forward Free");
+  }else if (Sensor_Distances[0] == 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
+//    Serial.println("Forward Free");
     forward(0.5);
     return;
-  } else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    //    Serial.println("Back Free");
+  }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
+//    Serial.println("Back Free");
     reverse(0.5);
     return;
-  } else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] == 0) {
-    //    Serial.println("Right Free");
+  }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] == 0) {
+//    Serial.println("Right Free");
     spin(90);
     reverse(0.5);
     return;
-  } else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] != 0) {
-    //    Serial.println("Left Free");
+  }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] != 0) {
+//    Serial.println("Left Free");
     spin(-90);
     reverse(0.5);
     return;
-  } else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    //    Serial.println("Trapped");
+  }else if (Sensor_Distances[0] != 0 && Sensor_Distances[1] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
+//    Serial.println("Trapped");
     return;
   }
   //Calculate the angle the robot needs to move
-  float Y_distance = Sensor_Distances[0] - Sensor_Distances[1] + Sensor_Distances[4] * cos(Pi / 4) + Sensor_Distances[5] * cos(Pi / 4);
-  float X_distance =  Sensor_Distances[3] - Sensor_Distances[2] +  Sensor_Distances[4] * sin(Pi / 4) - Sensor_Distances[5] * sin(Pi / 4);
-  float dist = sqrt(pow(X_distance, 2) + pow(Y_distance, 2)); //distance of point in feet
+  float Y_distance = Sensor_Distances[0] - Sensor_Distances[1] + Sensor_Distances[4]*cos(Pi/4) + Sensor_Distances[5]*cos(Pi/4);
+  float X_distance =  Sensor_Distances[3] - Sensor_Distances[2] +  Sensor_Distances[4]*sin(Pi/4) - Sensor_Distances[5]*sin(Pi/4);
+  float dist = sqrt(pow(X_distance,2) + pow(Y_distance,2)); //distance of point in feet
   //Check to see if there no object in range
   if (dist == 0) {
     return;
   }
   float angle = ((atan2((float)X_distance, (float)Y_distance)) * 180 / Pi); //calculate angle of POI
-  goToAngle((int) - angle); //robot will turn at given angle
+  goToAngle((int)-angle);//robot will turn at given angle
   //Uses distance from object to calc speed
-  speed = dist / active_range * 1000;
+  speed = dist/active_range*1000;
   if (speed == 0) {
     speed = CONST_SPD;
   }
-  //  Serial.print("Distance: ");
-  //  Serial.println(active_range/dist*0.25);
-  float distance = active_range / dist * 0.25;
+//  Serial.print("Distance: ");
+//  Serial.println(active_range/dist*0.25);
+  float distance = active_range/dist*0.25;
   if (distance >= 1) {
     distance = 1;
   }
   reverse(distance);
   speed = CONST_SPD;
-
+ 
   delay(100);
 }
 void Smart_Follow() {
   readSensors();
   int active_range = 25;
   int danger_range = 8;
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0;i<6;i++) {
     if (Sensor_Distances[i] == 2000) {
       Sensor_Distances[i] = 0;
     } else if (Sensor_Distances[i] > active_range) {
       Sensor_Distances[i] = 0;
     }
-    if (Sensor_Distances[i] < active_range && Sensor_Distances[i] > danger_range) {
+    if(Sensor_Distances[i] < active_range && Sensor_Distances[i] > danger_range) {
       Follow();
       return;
-    } else if (Sensor_Distances[i] < danger_range && Sensor_Distances[i] > 0) {
+    }else if(Sensor_Distances[i] < danger_range && Sensor_Distances[i] > 0){
       Halt();
       delay(1000);
       Flee();
@@ -782,16 +774,16 @@ void Smart_Avoid() {
   readSensors();
   int active_range = 25;
   int danger_range = 8;
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0;i<6;i++) {
     if (Sensor_Distances[i] == 2000) {
       Sensor_Distances[i] = 0;
     } else if (Sensor_Distances[i] > active_range) {
       Sensor_Distances[i] = 0;
     }
-    if (Sensor_Distances[i] < active_range && Sensor_Distances[i] > danger_range) {
+    if(Sensor_Distances[i] < active_range && Sensor_Distances[i] > danger_range) {
       Flee();
       return;
-    } else if (Sensor_Distances[i] < danger_range && Sensor_Distances[i] > 0) {
+    }else if(Sensor_Distances[i] < danger_range && Sensor_Distances[i] > 0){
       Halt();
       delay(1000);
       Flee();
@@ -805,30 +797,30 @@ void wallFollow() {
   readSensors();
   //Runs if there are walls on each side
   if (Sensor_Distances[0] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
-    //    Serial.println("Side Walls");
-    if (Sensor_Distances[5] <= 10) {
-      if (Sensor_Distances[5] <= 5) {
-        spin(-20);
-        forward(0.25);
-      }
+//    Serial.println("Side Walls");
+    if(Sensor_Distances[5] <= 10) {
+      if(Sensor_Distances[5] <= 5) {
+      spin(-20);
+      forward(0.25);
+    }
       float diff = Sensor_Distances[5] - Sensor_Distances[2];
       float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
-      //      Serial.println(angle);
+//      Serial.println(angle);
       spin(angle);
     }
-    if (Sensor_Distances[4] <= 10) {
-      if (Sensor_Distances[4] <= 5) {
-        spin(20);
-        forward(0.25);
-      }
+    if(Sensor_Distances[4] <= 10) {
+      if(Sensor_Distances[4] <= 5) {
+      spin(20);
+      forward(0.25);
+    }
       float diff = Sensor_Distances[4] - Sensor_Distances[3];
       float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
-      //      Serial.println(angle);
+//      Serial.println(angle);
       spin(-angle);
     }
     forward(0.5);
     return;
-  }
+  } 
   //Runs if there is a wall to the left of the robot
   else if (Sensor_Distances[0] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] == 0) {
     Serial.println("Left Wall");
@@ -836,11 +828,11 @@ void wallFollow() {
     digitalWrite(grnLED, HIGH);//turn on green LED
     digitalWrite(ylwLED, HIGH);//turn off yellow LED
     wall_state = 2;
-    if (Sensor_Distances[5] <= 5) {
+    if(Sensor_Distances[5] <= 5) {
       spin(-20);
       forward(0.25);
     }
-    if (Sensor_Distances[5] >= 30) {
+     if(Sensor_Distances[5] >= 30) {
       spin(20);
       forward(0.25);
     }
@@ -850,7 +842,7 @@ void wallFollow() {
     spin(angle);
     forward(0.5);
     return;
-  }
+  } 
   //Runs if there is a wall to the right of the robot
   else if (Sensor_Distances[0] == 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] != 0) {
     wall_state = 3;
@@ -858,11 +850,11 @@ void wallFollow() {
     digitalWrite(redLED, HIGH);//turn off red LED
     digitalWrite(grnLED, LOW);//turn on green LED
     digitalWrite(ylwLED, HIGH);//turn off yellow LED
-    if (Sensor_Distances[4] <= 5) {
+    if(Sensor_Distances[4] <= 5) {
       spin(20);
       forward(0.25);
     }
-    if (Sensor_Distances[4] >= 30) {
+     if(Sensor_Distances[4] >= 30) {
       spin(-20);
       forward(0.25);
     }
@@ -879,7 +871,7 @@ void wallFollow() {
     digitalWrite(grnLED, HIGH);//turn on green LED
     digitalWrite(ylwLED, LOW);//turn off yellow LED
     //Checks which wall we were on before the turn
-    if (wall_state == 2) {
+    if(wall_state == 2) {
       Serial.println("Right turn");
       spin(-90);
       forward(0.5);
@@ -892,7 +884,7 @@ void wallFollow() {
   }
   //Check for blind turn
   else if (Sensor_Distances[2] == 0 && Sensor_Distances[3] == 0) {
-    if (wall_state == 2) {
+    if(wall_state == 2) {
       Serial.println("Left turn");
       forward(.75);
       spin(90);
@@ -906,79 +898,64 @@ void wallFollow() {
       forward(2);
       wall_state = 0;
       return;
-    } else {
+    } else{
       randomWander();
     }
   }
-  if(posY == 0){ //??? idk where to break the wallFollow func
-    Serial.println("Return to origin");
-//    break;
-  }
 }
 
-void SmartGoal(int x, int y) {
-//  readSensors();
+void SmartGoal(int x, int y){
   digitalWrite(redLED, LOW);//turn off red LED
   digitalWrite(grnLED, HIGH);//turn on green LED
   digitalWrite(ylwLED, HIGH);//turn on yellow LED
   float angle = ((atan2((float)y, (float)x)) * 180 / Pi); //calculate angle of POI
   goToAngle(angle);//robot will turn at given angle
-//  currentAngle = angle;
+  currentAngle = angle;
   float dist = sqrt(x * x + y * y); //distance of point in feet
-//  posX = x;
-//  posY = y;
+  posX = x;
+  posY = y;
   float curDist = 0.0;
-//    if(Sensor_Distances[0] != 0){
-//      Serial.println("Object Detected");
-//    } else {
-//      Serial.println("Nothing Detected");
-//    }
-// loops the forward function until it reaches the designated destination
-  while (curDist < dist) {
-    readSensors();
-    // checks if there is obstacle in front or sides, else it continues to move forward
-    if (Sensor_Distances[0] != 0) {
+  while (curDist < dist){
+    curDist = 0.5 + curDist;
+    Serial.println(curDist);
+    forward(0.5);
+    if(Sensor_Distances[0] != 0){
       Serial.println("Object Detected");
+      spin(90);
       wallFollow();
-      curDist += posX;
-    } else if ((Sensor_Distances[0] != 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] != 0) || (Sensor_Distances[0] != 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] == 0)) {
+    } else if((Sensor_Distances[0] == 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] != 0)||(Sensor_Distances[0] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] == 0)){
       Serial.println("Multiple Object Detected");
       wallFollow();
-    } else {
-      forward(0.5); //probably need to use goToGoal but eh
-      curDist = 0.5 + curDist;
-      Serial.println(curDist);
     }
-  }
-  delay(wait_time);
+  } 
+  
 }
 
-  //// MAIN
-  void setup() {
-    int baudrate = 9600; //serial monitor baud rate'
-    init_stepper(); //set up stepper motor
-    randomSeed(analogRead(0)); //generate a new random number each time called
-
-    for (int i = 0; i < numOfSens; i++) {
-      pinMode(lidar_pins[i], OUTPUT);
-      delay(100);
-    }
-
-    attachInterrupt(digitalPinToInterrupt(ltEncoder), LwheelSpeed, CHANGE);    //init the interrupt mode for the left encoder
-    attachInterrupt(digitalPinToInterrupt(rtEncoder), RwheelSpeed, CHANGE);   //init the interrupt mode for the right encoder
-
-    Serial.begin(baudrate);     //start serial monitor communication
-    Serial.println("Robot starting...Put ON TEST STAND");
-    delay(pauseTime); //always wait 2.5 seconds before the robot moves
+//// MAIN
+void setup() {
+  int baudrate = 9600; //serial monitor baud rate'
+  init_stepper(); //set up stepper motor
+  randomSeed(analogRead(0)); //generate a new random number each time called
+ 
+  for (int i = 0; i<numOfSens;i++){
+    pinMode(lidar_pins[i],OUTPUT);
+    delay(100);
   }
-
-  void loop() {
-    //  readSensors();
-    SmartGoal(6, 0);
-    //  wallFollow();
-    //randomWander();
-    //  Follow();
-    // forward(100);
-    //  spin(90);
-    //  delay(wait_time/4);               //wait to move robot or read data
-  }
+ 
+  attachInterrupt(digitalPinToInterrupt(ltEncoder), LwheelSpeed, CHANGE);    //init the interrupt mode for the left encoder
+  attachInterrupt(digitalPinToInterrupt(rtEncoder), RwheelSpeed, CHANGE);   //init the interrupt mode for the right encoder
+ 
+  Serial.begin(baudrate);     //start serial monitor communication
+  Serial.println("Robot starting...Put ON TEST STAND");
+  delay(pauseTime); //always wait 2.5 seconds before the robot moves
+}
+ 
+void loop() {
+  SmartGoal(6,0);
+//  wallFollow();
+//randomWander();
+//  Follow();
+// forward(100);
+//  spin(90);
+//  delay(wait_time/4);               //wait to move robot or read data
+}
