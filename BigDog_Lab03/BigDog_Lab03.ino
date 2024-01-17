@@ -432,10 +432,14 @@ void forward(float distance) {
   moveR(distance, speed); //set right motor
   moveL(distance, speed); //set left motor
   steppers.runSpeedToPosition();
-  if(currentAngle == 90 || currentAngle == -90){
+  if(currentAngle == 90){
     posY = posY + distance;
-  } else if (currentAngle == 0 || currentAngle == 180){
-    posX = posX + distance;
+  } else if(currentAngle == -90){
+    posY = posY - distance;
+  } else if(currentAngle == 0){
+    posX = posX - distance;
+  } else if (currentAngle == 180){
+    posX = posX - distance;
   } else {
     posX = posX + cos(currentAngle)*distance;
     posY = posY + sin(currentAngle)*distance;
@@ -886,7 +890,7 @@ void wallFollow() {
     return;
   }
   //Runs if there is a wall in front of the robot
-  else if (Sensor_Distances[0] != 0 ) {
+  else if (Sensor_Distances[0] != 0) {
     digitalWrite(redLED, HIGH);//turn off red LED
     digitalWrite(grnLED, HIGH);//turn on green LED
     digitalWrite(ylwLED, LOW);//turn off yellow LED
@@ -903,7 +907,7 @@ void wallFollow() {
     }
   }
   //Check for blind turn
-  else if (Sensor_Distances[2] == 0 && Sensor_Distances[3] == 0) {
+  else if (Sensor_Distances[0] == 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] == 0) {
     if (wall_state == 2) {
       Serial.println("Blind Left turn");
       forward(.75);
@@ -919,18 +923,17 @@ void wallFollow() {
       wall_state = 0;
       return;
     } 
-    else if (pathPlanning){
-      forward(.5);
-    }
-    else{
-      randomWander();
-    }
+//    else if (pathPlanning){
+//      forward(.5);
+//    }
+//    else {
+//      randomWander();
+//    }
   }
   if(posY == 0 && curDir == "neg" && pathPlanning == true){ //??? idk how to return to origin properly
     Serial.println("Return to origin");
     spin(-currentAngle);
     origin = true;
-//    break;
   }
 }
 
@@ -971,6 +974,80 @@ void SmartGoal(int x, int y) {
   }
   delay(wait_time);
 }
+void fuckingBS(){ //delete after demo
+//  readSensors();
+  float curDist = 0.0;
+  float totDist = 6.0;
+  int state = 0;
+  int curAngle = 0;
+  float axisX = 0.0;
+  float axisY = 0.0;
+  while(curDist < totDist){
+    readSensors();
+      Serial.print("Pos: ");
+      Serial.print(axisX);
+      Serial.print(", ");
+      Serial.print(axisY);
+      Serial.print(" Angle: ");
+      Serial.println(curAngle);
+      if(state == 0){
+        Serial.println("State 0");
+        forward(0.5);
+        if(curAngle = 90){
+          axisY += 0.5;
+        } else if(curAngle= -90){
+          axisY -= 0.5;
+        }
+        else if(curAngle = 0){
+          curDist += 0.5;
+          axisX += 0.5;
+        }
+        if(Sensor_Distances[0] != 0){
+          state = 1;
+        } else if(Sensor_Distances[3] != 0){
+          if(posY == 0.0 && curAngle == -90){
+            state = 3;
+          } else {
+            state = 2;
+          }
+        } else{
+          state = 0;
+        }
+      }
+      else if(state == 1){
+        Serial.println("State 1");
+        if(Sensor_Distances[0] <= 20){
+        spin(90);
+        state = 0;
+        } else{
+          forward(0.5);
+          if(curAngle = 90){
+            axisY += 0.5;
+          } else if(curAngle= -90){
+            axisY -= 0.5;
+          }
+          else if(curAngle = 0){
+            curDist += 0.5;
+            axisX += 0.5;
+          }
+        }
+      }
+      else if(state == 2){
+      Serial.println("State 2");
+        forward(0.5);
+        if(Sensor_Distances[3] == 0){
+          spin(-90);
+          state = 0;
+        }
+      }
+      else if(state = 3){
+        Serial.print("Returned to origin");
+        spin(90);
+        state = 0;
+      }
+  }
+  delay(wait_time);
+}
 
   //// MAIN
   void setup() {
@@ -993,7 +1070,8 @@ void SmartGoal(int x, int y) {
 
   void loop() {
     //  readSensors();
-    SmartGoal(6, 0);
+//    SmartGoal(6, 0);
+    fuckingBS();
 //      wallFollow();
     //randomWander();
     //  Follow();
