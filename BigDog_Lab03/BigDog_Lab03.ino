@@ -375,9 +375,9 @@ void spin(int direction) {
   float percent_rot = (angle / 360); //gives fraction of angle to full circle
   float distance = Wheel_Dist * Pi * percent_rot; //calculates circumference
   //Choose which direction we are turning
-  currentAngle += direction;
-  Serial.print("Angle: ");
-  Serial.println(currentAngle);
+//  currentAngle += direction;
+//  Serial.print("Angle: ");
+//  Serial.println(currentAngle);
   if (direction > 0) {
     moveR(distance, speed); //set right motor cw
     moveL(-distance, speed); //set left motor ccw
@@ -979,7 +979,7 @@ void fuckingBS(){ //delete after demo
   float curDist = 0.0;
   float totDist = 6.0;
   int state = 0;
-  int curAngle = 0;
+  int cunt = 0;
   float axisX = 0.0;
   float axisY = 0.0;
   while(curDist < totDist){
@@ -989,23 +989,23 @@ void fuckingBS(){ //delete after demo
       Serial.print(", ");
       Serial.print(axisY);
       Serial.print(" Angle: ");
-      Serial.println(curAngle);
+      Serial.println(cunt);
       if(state == 0){
         Serial.println("State 0");
         forward(0.5);
-        if(curAngle = 90){
+        if(cunt == 90){
           axisY += 0.5;
-        } else if(curAngle= -90){
+        } else if(cunt == -90){
           axisY -= 0.5;
         }
-        else if(curAngle = 0){
+        else if(cunt == 0){
           curDist += 0.5;
           axisX += 0.5;
         }
         if(Sensor_Distances[0] != 0){
           state = 1;
         } else if(Sensor_Distances[3] != 0){
-          if(posY == 0.0 && curAngle == -90){
+          if(posY == 0.0 && cunt == -90){
             state = 3;
           } else {
             state = 2;
@@ -1018,15 +1018,16 @@ void fuckingBS(){ //delete after demo
         Serial.println("State 1");
         if(Sensor_Distances[0] <= 20){
         spin(90);
+        cunt +=90;
         state = 0;
-        } else{
+        } else{ 
           forward(0.5);
-          if(curAngle = 90){
+          if(cunt == 90){
             axisY += 0.5;
-          } else if(curAngle= -90){
+          } else if(cunt= -90){
             axisY -= 0.5;
           }
-          else if(curAngle = 0){
+          else if(cunt == 0){
             curDist += 0.5;
             axisX += 0.5;
           }
@@ -1037,12 +1038,14 @@ void fuckingBS(){ //delete after demo
         forward(0.5);
         if(Sensor_Distances[3] == 0){
           spin(-90);
+          cunt -= 90;
           state = 0;
         }
       }
       else if(state = 3){
         Serial.print("Returned to origin");
         spin(90);
+        cunt += 90;
         state = 0;
       }
   }
