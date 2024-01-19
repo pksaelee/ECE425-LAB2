@@ -1052,33 +1052,35 @@ void fuckingBS(){ //delete after demo
   delay(wait_time);
 }
 
-  //// MAIN
-  void setup() {
-    int baudrate = 9600; //serial monitor baud rate'
-    init_stepper(); //set up stepper motor
-    randomSeed(analogRead(0)); //generate a new random number each time called
 
-    for (int i = 0; i < numOfSens; i++) {
-      pinMode(lidar_pins[i], OUTPUT);
-      delay(100);
-    }
 
-    attachInterrupt(digitalPinToInterrupt(ltEncoder), LwheelSpeed, CHANGE);    //init the interrupt mode for the left encoder
-    attachInterrupt(digitalPinToInterrupt(rtEncoder), RwheelSpeed, CHANGE);   //init the interrupt mode for the right encoder
+//// MAIN
+void setup() {
+  int baudrate = 9600; //serial monitor baud rate'
+  init_stepper(); //set up stepper motor
+  randomSeed(analogRead(0)); //generate a new random number each time called
 
-    Serial.begin(baudrate);     //start serial monitor communication
-    Serial.println("Robot starting...Put ON TEST STAND");
-    delay(pauseTime); //always wait 2.5 seconds before the robot moves
+  for (int i = 0; i < numOfSens; i++) {
+    pinMode(lidar_pins[i], OUTPUT);
+    delay(100);
   }
 
-  void loop() {
-    //  readSensors();
+  attachInterrupt(digitalPinToInterrupt(ltEncoder), LwheelSpeed, CHANGE);    //init the interrupt mode for the left encoder
+  attachInterrupt(digitalPinToInterrupt(rtEncoder), RwheelSpeed, CHANGE);   //init the interrupt mode for the right encoder
+
+  Serial.begin(baudrate);     //start serial monitor communication
+  Serial.println("Robot starting...Put ON TEST STAND");
+  delay(pauseTime); //always wait 2.5 seconds before the robot moves
+}
+
+void loop() {
+  //  readSensors();
 //    SmartGoal(6, 0);
-    fuckingBS();
+  light_test();
 //      wallFollow();
-    //randomWander();
-    //  Follow();
-    // forward(100);
-    //  spin(90);
-    //  delay(wait_time/4);               //wait to move robot or read data
-  }
+  //randomWander();
+  //  Follow();
+  // forward(100);
+  //  spin(90);
+  //  delay(wait_time/4);               //wait to move robot or read data
+}
