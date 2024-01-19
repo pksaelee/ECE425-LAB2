@@ -1052,7 +1052,16 @@ void fuckingBS(){ //delete after demo
   delay(wait_time);
 }
 
-
+void light_test() {
+  float left_light_val = analogRead(1);
+  float right_light_val = analogRead(2);
+  Serial.print("Left Light = ");
+  Serial.print(left_light_val);
+  Serial.print(", ");
+  Serial.print("Right Light = ");
+  Serial.println(right_light_val);
+  delay(1000);
+}
 
 //// MAIN
 void setup() {
