@@ -133,6 +133,8 @@ int16_t lidar_pins[4] = {ft_lidar, bk_lidar, lt_lidar, rt_lidar};
 int16_t rt_trigechoPin = 3;
 int16_t lt_trigechoPin = 4;
 int16_t trig_EchoPin[2] = { 3, 4 };
+int leftLight;
+int rightLight;
 //uint16_t wait = 250;
 
 //define values for sensor distances
@@ -1052,16 +1054,52 @@ void fuckingBS(){ //delete after demo
   delay(wait_time);
 }
 
-void light_test() {
-  float left_light_val = analogRead(1);
-  float right_light_val = analogRead(2);
+void readLight() {
+  leftLight = analogRead(1);
+  rightLight = analogRead(2);
   Serial.print("Left Light = ");
-  Serial.print(left_light_val);
+  Serial.print(leftLight);
   Serial.print(", ");
   Serial.print("Right Light = ");
-  Serial.println(right_light_val);
-  delay(1000);
+  Serial.println(rightLight);
+//  delay(1000);
 }
+
+void moveToLight(){
+  readLight();
+  int minSpeed = 500;
+  int maxLightL = 350;
+//  int minLightL = 
+  int maxLightR = 370;
+  float minDist = 0.5;
+  
+  int distLight = (minDist*leftLight)/maxLightL;
+  int speedL = (minSpeed*leftLight)/maxLightL;
+  Serial.print("Left Speed = ");
+  Serial.print(speedL);
+  int speedR = (minSpeed*rightLight)/maxLightR;
+  Serial.print(" Right Speed = ");
+  Serial.println(speedR);
+
+  if(leftLight > maxLightL){
+    stepperLeft.stop();
+    moveR(0.2, speedR);
+//    delay(1000);
+  } else{
+    moveL(0.2, speedL);
+    moveR(0.2, speedR);
+  }
+  if (rightLight > maxLightL){
+    stepperRight.stop();
+    moveL(0.2, speedL);
+//    delay(1000);
+  } else{
+    moveL(0.2, speedL);
+    moveR(0.2, speedR);
+}
+  steppers.runSpeedToPosition();
+}
+
 
 //// MAIN
 void setup() {
@@ -1085,8 +1123,8 @@ void setup() {
 void loop() {
   //  readSensors();
 //    SmartGoal(6, 0);
-  light_test();
-//      wallFollow();
+  moveToLight();
+  //      wallFollow();
   //randomWander();
   //  Follow();
   // forward(100);
