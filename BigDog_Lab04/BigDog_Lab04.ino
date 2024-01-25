@@ -147,6 +147,13 @@ bool Object_in_Range = false;
 int wall_dist = 25;
 int wall_state = 1;
 
+//Positional Data
+float robo_theta = 0;
+float robo_x = 0;
+float robo_y = 0;
+int robo_state = 0;
+//0 = forward, 1 = one wheel turn, 2 = spin
+
 //interrupt function to count left encoder tickes
 void LwheelSpeed()
 {
@@ -269,7 +276,24 @@ void moveR(float distance, int speed) {
   } else { // when moving backward
     steps = convertFeetToSteps(distance, 1);
   }
-  //  Serial.println(steps);
+  if(robo_state == 0) {
+    robo_x = robo_x + distance*cos(robo_theta*Pi/180)/2; 
+    robo_y = robo_y + distance*sin(robo_theta*Pi/180)/2;
+  } else if(robo_state == 1) {
+    float cur_theta = (360*distance)/(Wheel_Dist*Pi)/2;
+    robo_theta = robo_theta + cur_theta;
+  } else {
+    float cur_theta = (360*distance)/(Wheel_Dist*Pi);
+    float cur_x = Wheel_Dist*cos(cur_theta*Pi/180)/2;
+    float cur_y = (Wheel_Dist/2) - Wheel_Dist*sin(cur_theta*Pi/180)/2;
+    float cur_dist = sqrt(cur_x*cur_x + cur_y*cur_y);
+    Serial.println(cur_x);
+    Serial.println(cur_y);
+    robo_x = robo_x + cur_dist*cos((robo_theta + cur_theta/4)*Pi/180); 
+    robo_y = robo_y + cur_dist*sin((robo_theta + cur_theta/4)*Pi/180);
+    robo_theta = robo_theta + cur_theta/2;
+  }
+
   stepperRight.moveTo(steps);//move number of steps forward relative to current position
   stepperRight.setSpeed(speed);//set right motor speed
   stepperRight.runSpeedToPosition();//move right motor
@@ -283,7 +307,22 @@ void moveL(float distance, int speed) {
   } else { // when moving backward
     steps = convertFeetToSteps(distance, 1);
   }
-  //  Serial.println(steps);
+  if(robo_state == 0) {
+    robo_x = robo_x + distance*cos(robo_theta*Pi/180)/2; 
+    robo_y = robo_y + distance*sin(robo_theta*Pi/180)/2;
+  } else if(robo_state == 1) {
+    float cur_theta = (360*distance)/(Wheel_Dist*Pi)/2;
+    robo_theta = robo_theta - cur_theta;
+  } else {
+    float cur_theta = (360*distance)/(Wheel_Dist*Pi);
+    float cur_x = Wheel_Dist*cos(cur_theta*Pi/180)/2;
+    float cur_y = (Wheel_Dist/2) - Wheel_Dist*sin(cur_theta*Pi/180)/2;
+    float cur_dist = sqrt(cur_x*cur_x + cur_y*cur_y);
+    robo_x = robo_x + cur_dist*cos((robo_theta - cur_theta/4)*Pi/180); 
+    robo_y = robo_y + cur_dist*sin((robo_theta - cur_theta/4)*Pi/180);
+    robo_theta = robo_theta - cur_theta/2;
+  }
+
   stepperLeft.moveTo(steps);//move number of steps forward relative to current position
   stepperLeft.setSpeed(speed);//set left motor speed
   stepperLeft.runSpeedToPosition();//move right motor
@@ -346,6 +385,7 @@ int convertFeetToSteps(float measurement, int direction) {
   based on the angle given
 */
 void pivot(int direction) {
+  robo_state = 2;
   //  Serial.println("Pivot");
   digitalWrite(redLED, LOW);//turn off red LED
   digitalWrite(grnLED, HIGH);//turn on green LED
@@ -356,10 +396,10 @@ void pivot(int direction) {
   float distance = 2 * Wheel_Dist * Pi * percent_rot; // calculates the distance the motor will travel where Wheel_Dist is the distance between two of the motors
   //Choose which direction we are turning
   if (direction < 0) {// when ccw
-    moveR(distance, speed); //moves only right motor
+    moveL(distance, speed); //moves only right motor
   }
   else { // when cw
-    moveL(distance, speed); //moves only left motor
+    moveR(distance, speed); //moves only left motor
   }
   runToStop();//run until the robot reaches the target
 }
@@ -369,6 +409,7 @@ void pivot(int direction) {
   counter closewise based on the angle given
 */
 void spin(int direction) {
+  robo_state = 1;
   digitalWrite(redLED, HIGH);//turn on red LED
   digitalWrite(grnLED, HIGH);//turn on green LED
   digitalWrite(ylwLED, LOW);//turn off yellow LED
@@ -426,7 +467,8 @@ void turn(float diameter, int degree) {
   The wheels will move in the same direction at the same speed
 */
 void forward(float distance) {
-  Serial.println("Forward");
+  robo_state = 0;
+  //Serial.println("Forward");
   digitalWrite(redLED, LOW);//turn off red LED
   digitalWrite(grnLED, HIGH);//turn on green LED
   digitalWrite(ylwLED, LOW);//turn off yellow LED
@@ -446,14 +488,15 @@ void forward(float distance) {
     posX = posX + cos(currentAngle)*distance;
     posY = posY + sin(currentAngle)*distance;
   }
-  Serial.print("Pos Y: ");
-    Serial.println(posY);
+  //Serial.print("Pos Y: ");
+  //Serial.println(posY);
   //runToStop();//run until the robot reaches the target
 }
 /*
   The reverse() function will use AccelStepper to move the robot backwards for a certain distance inputted.
   The wheels will move in the same direction a  t the same speed*/
 void reverse(float distance) {
+  robo_state = 0;
   Serial.println("Reverse");
   digitalWrite(redLED, LOW);//turn off red LED
   digitalWrite(grnLED, LOW);//turn off green LED
@@ -1065,41 +1108,89 @@ void readLight() {
 //  delay(1000);
 }
 
-void moveToLight(){
+void Love(){
+  robo_state = 2;
   readLight();
   int minSpeed = 500;
-  int maxLightL = 350;
-//  int minLightL = 
-  int maxLightR = 370;
+  int maxSpeed = 100;
+  int maxLightL = 750;
+  int maxLightR = 550;
+  int light_threshold = 150;
   float minDist = 0.5;
   
-  int distLight = (minDist*leftLight)/maxLightL;
-  int speedL = (minSpeed*leftLight)/maxLightL;
-  Serial.print("Left Speed = ");
-  Serial.print(speedL);
-  int speedR = (minSpeed*rightLight)/maxLightR;
-  Serial.print(" Right Speed = ");
-  Serial.println(speedR);
-
-  if(leftLight > maxLightL){
-    stepperLeft.stop();
-    moveR(0.2, speedR);
-//    delay(1000);
-  } else{
-    moveL(0.2, speedL);
-    moveR(0.2, speedR);
+  int distLightL = (minDist*leftLight)/maxLightL;
+  int speedL = (minSpeed*maxLightL)/leftLight;
+  // Serial.print("Left Speed = ");
+  // Serial.print(speedL);
+  int distLightR = (minDist*rightLight)/maxLightR;
+  int speedR = (minSpeed*maxLightR)/rightLight;
+  // Serial.print(" Right Speed = ");
+  // Serial.println(speedR);
+  //check if we are too close to either sensor
+   if(leftLight > maxLightL - 150){
+    return;
   }
-  if (rightLight > maxLightL){
-    stepperRight.stop();
-    moveL(0.2, speedL);
-//    delay(1000);
-  } else{
-    moveL(0.2, speedL);
-    moveR(0.2, speedR);
-}
+  if (rightLight > maxLightR - 100){
+    return;
+  }
+
+  //Set a cap on the speeds
+  if(speedL > maxSpeed) {
+    speedL = maxSpeed;
+  } if(speedR > maxSpeed) {
+    speedR = maxSpeed;
+  }
+  //Move forward at set speed if light threshold is met
+  if(leftLight > light_threshold){
+    moveR(0.1, speedL);
+  }
+  if (rightLight > light_threshold){
+    moveL(0.1, speedR);
+  }
   steppers.runSpeedToPosition();
 }
 
+void Fear(){
+  robo_state = 2;
+  readLight();
+  int minSpeed = 500;
+  int maxSpeed = 100;
+  int maxLightL = 750;
+  int maxLightR = 550;
+  int light_threshold = 150;
+  float minDist = 0.5;
+  
+  int distLightL = (minDist*leftLight)/maxLightL;
+  int speedL = (minSpeed*maxLightL)/leftLight;
+  // Serial.print("Left Speed = ");
+  // Serial.print(speedL);
+  int distLightR = (minDist*rightLight)/maxLightR;
+  int speedR = (minSpeed*maxLightR)/rightLight;
+  // Serial.print(" Right Speed = ");
+  // Serial.println(speedR);
+  //check if we are too close to either sensor
+   if(leftLight > maxLightL - 150){
+    return;
+  }
+  if (rightLight > maxLightR - 100){
+    return;
+  }
+
+  //Set a cap on the speeds
+  if(speedL > maxSpeed) {
+    speedL = maxSpeed;
+  } if(speedR > maxSpeed) {
+    speedR = maxSpeed;
+  }
+  //Move forward at set speed if light threshold is met
+  if(leftLight > light_threshold){
+    moveL(0.1, speedL);
+  }
+  if (rightLight > light_threshold){
+    moveR(0.1, speedR);
+  }
+  steppers.runSpeedToPosition();
+}
 
 //// MAIN
 void setup() {
@@ -1118,16 +1209,24 @@ void setup() {
   Serial.begin(baudrate);     //start serial monitor communication
   Serial.println("Robot starting...Put ON TEST STAND");
   delay(pauseTime); //always wait 2.5 seconds before the robot moves
+  pivot(90);
+  Serial.print("Theta = ");
+  Serial.print(robo_theta);
+  Serial.print(" X = ");
+  Serial.print(robo_x);
+  Serial.print(" Y = ");
+  Serial.println(robo_y);
+  pivot(90);
+  Serial.print("Theta = ");
+  Serial.print(robo_theta);
+  Serial.print(" X = ");
+  Serial.print(robo_x);
+  Serial.print(" Y = ");
+  Serial.println(robo_y);
+
+  
 }
 
 void loop() {
-  //  readSensors();
-//    SmartGoal(6, 0);
-  moveToLight();
-  //      wallFollow();
-  //randomWander();
-  //  Follow();
-  // forward(100);
-  //  spin(90);
-  //  delay(wait_time/4);               //wait to move robot or read data
+
 }
