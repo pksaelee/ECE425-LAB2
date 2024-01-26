@@ -154,6 +154,11 @@ float robo_y = 0;
 int robo_state = 0;
 //0 = forward, 1 = one wheel turn, 2 = spin
 
+//Docking Data
+int dock_state = 0;
+int light_threshold = 350;
+//0 = initial wall follow, 1 = light follow, 2 = obstacle avoidance, 3 = dock, 4 = returning home
+
 //interrupt function to count left encoder tickes
 void LwheelSpeed()
 {
@@ -283,15 +288,13 @@ void moveR(float distance, int speed) {
     float cur_theta = (360*distance)/(Wheel_Dist*Pi)/2;
     robo_theta = robo_theta + cur_theta;
   } else {
-    float cur_theta = (360*distance)/(Wheel_Dist*Pi);
-    float cur_x = Wheel_Dist*cos(cur_theta*Pi/180)/2;
-    float cur_y = (Wheel_Dist/2) - Wheel_Dist*sin(cur_theta*Pi/180)/2;
+    float cur_theta = (360*distance)/(2*Wheel_Dist*Pi);
+    float cur_x = Wheel_Dist*sin(cur_theta*Pi/180)/2;
+    float cur_y = (Wheel_Dist/2) - Wheel_Dist*cos(cur_theta*Pi/180)/2;
     float cur_dist = sqrt(cur_x*cur_x + cur_y*cur_y);
-    Serial.println(cur_x);
-    Serial.println(cur_y);
-    robo_x = robo_x + cur_dist*cos((robo_theta + cur_theta/4)*Pi/180); 
-    robo_y = robo_y + cur_dist*sin((robo_theta + cur_theta/4)*Pi/180);
-    robo_theta = robo_theta + cur_theta/2;
+    robo_x = robo_x + cur_dist*cos((robo_theta + cur_theta/2)*Pi/180); 
+    robo_y = robo_y + cur_dist*sin((robo_theta + cur_theta/2)*Pi/180);
+    robo_theta = robo_theta + cur_theta;
   }
 
   stepperRight.moveTo(steps);//move number of steps forward relative to current position
@@ -314,13 +317,13 @@ void moveL(float distance, int speed) {
     float cur_theta = (360*distance)/(Wheel_Dist*Pi)/2;
     robo_theta = robo_theta - cur_theta;
   } else {
-    float cur_theta = (360*distance)/(Wheel_Dist*Pi);
-    float cur_x = Wheel_Dist*cos(cur_theta*Pi/180)/2;
-    float cur_y = (Wheel_Dist/2) - Wheel_Dist*sin(cur_theta*Pi/180)/2;
+    float cur_theta = (360*distance)/(2*Wheel_Dist*Pi);
+    float cur_x = Wheel_Dist*sin(cur_theta*Pi/180)/2;
+    float cur_y = (Wheel_Dist/2) - Wheel_Dist*cos(cur_theta*Pi/180)/2;
     float cur_dist = sqrt(cur_x*cur_x + cur_y*cur_y);
-    robo_x = robo_x + cur_dist*cos((robo_theta - cur_theta/4)*Pi/180); 
-    robo_y = robo_y + cur_dist*sin((robo_theta - cur_theta/4)*Pi/180);
-    robo_theta = robo_theta - cur_theta/2;
+    robo_x = robo_x + cur_dist*cos((robo_theta - cur_theta/2)*Pi/180); 
+    robo_y = robo_y + cur_dist*sin((robo_theta - cur_theta/2)*Pi/180);
+    robo_theta = robo_theta - cur_theta;
   }
 
   stepperLeft.moveTo(steps);//move number of steps forward relative to current position
@@ -393,7 +396,7 @@ void pivot(int direction) {
   //Calculate the distance needed to travel for given rotation
   float angle = abs(direction);//ensures value is positive
   float percent_rot = (angle / 360); // returns a fraction of the angle out of 360 degrees
-  float distance = 2 * Wheel_Dist * Pi * percent_rot; // calculates the distance the motor will travel where Wheel_Dist is the distance between two of the motors
+  float distance = 2* Wheel_Dist * Pi * percent_rot; // calculates the distance the motor will travel where Wheel_Dist is the distance between two of the motors
   //Choose which direction we are turning
   if (direction < 0) {// when ccw
     moveL(distance, speed); //moves only right motor
@@ -401,7 +404,7 @@ void pivot(int direction) {
   else { // when cw
     moveR(distance, speed); //moves only left motor
   }
-  runToStop();//run until the robot reaches the target
+  steppers.runSpeedToPosition();//run until the robot reaches the target
 }
 
 /*
@@ -1019,82 +1022,110 @@ void SmartGoal(int x, int y) {
   }
   delay(wait_time);
 }
-void fuckingBS(){ //delete after demo
-//  readSensors();
-  float curDist = 0.0;
-  float totDist = 6.0;
-  int state = 0;
-  int cunt = 0;
-  float axisX = 0.0;
-  float axisY = 0.0;
-  while(curDist < totDist){
-    readSensors();
-      Serial.print("Pos: ");
-      Serial.print(axisX);
-      Serial.print(", ");
-      Serial.print(axisY);
-      Serial.print(" Angle: ");
-      Serial.println(cunt);
-      if(state == 0){
-        Serial.println("State 0");
-        forward(0.5);
-        if(cunt == 90){
-          axisY += 0.5;
-        } else if(cunt == -90){
-          axisY -= 0.5;
-        }
-        else if(cunt == 0){
-          curDist += 0.5;
-          axisX += 0.5;
-        }
-        if(Sensor_Distances[0] != 0){
-          state = 1;
-        } else if(Sensor_Distances[3] != 0){
-          if(posY == 0.0 && cunt == -90){
-            state = 3;
-          } else {
-            state = 2;
-          }
-        } else{
-          state = 0;
-        }
+void Obstacle_Avoidance() {
+readSensors();
+  //Runs if there are walls on each side
+  if (Sensor_Distances[0] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] != 0) {
+    //    Serial.println("Side Walls");
+    if (Sensor_Distances[5] <= 10) {
+      if (Sensor_Distances[5] <= 5) {
+        spin(-20);
+        forward(0.25);
       }
-      else if(state == 1){
-        Serial.println("State 1");
-        if(Sensor_Distances[0] <= 20){
-        spin(90);
-        cunt +=90;
-        state = 0;
-        } else{ 
-          forward(0.5);
-          if(cunt == 90){
-            axisY += 0.5;
-          } else if(cunt= -90){
-            axisY -= 0.5;
-          }
-          else if(cunt == 0){
-            curDist += 0.5;
-            axisX += 0.5;
-          }
-        }
+      float diff = Sensor_Distances[5] - Sensor_Distances[2];
+      float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
+      //      Serial.println(angle);
+      spin(angle);
+    }
+    if (Sensor_Distances[4] <= 10) {
+      if (Sensor_Distances[4] <= 5) {
+        spin(20);
+        forward(0.25);
       }
-      else if(state == 2){
-      Serial.println("State 2");
-        forward(0.5);
-        if(Sensor_Distances[3] == 0){
-          spin(-90);
-          cunt -= 90;
-          state = 0;
-        }
-      }
-      else if(state = 3){
-        Serial.print("Returned to origin");
-        spin(90);
-        cunt += 90;
-        state = 0;
-      }
+      float diff = Sensor_Distances[4] - Sensor_Distances[3];
+      float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
+      //      Serial.println(angle);
+      spin(-angle);
+    }
+    forward(0.5);
+    return;
   }
-  delay(wait_time);
+  //Runs if there is a wall to the left of the robot
+  else if (Sensor_Distances[0] == 0 && Sensor_Distances[2] != 0 && Sensor_Distances[3] == 0) {
+    Serial.println("Left Wall");
+    digitalWrite(redLED, LOW);//turn off red LED
+    digitalWrite(grnLED, HIGH);//turn on green LED
+    digitalWrite(ylwLED, HIGH);//turn off yellow LED
+    wall_state = 2;
+    if (Sensor_Distances[5] <= 5) {
+      spin(-20);
+      forward(0.25);
+    }
+    if (Sensor_Distances[5] >= 30) {
+      spin(20);
+      forward(0.25);
+    }
+    float diff = Sensor_Distances[5] - Sensor_Distances[2];
+    float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
+    Serial.println(angle);
+    spin(angle);
+    forward(0.5);
+    return;
+  }
+  //Runs if there is a wall to the right of the robot
+  else if (Sensor_Distances[0] == 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] != 0) {
+    wall_state = 3;
+    Serial.println("Right Wall");
+    digitalWrite(redLED, HIGH);//turn off red LED
+    digitalWrite(grnLED, LOW);//turn on green LED
+    digitalWrite(ylwLED, HIGH);//turn off yellow LED
+    if (Sensor_Distances[4] <= 5) {
+      spin(20);
+      forward(0.25);
+    }
+    if (Sensor_Distances[4] >= 30) {
+      spin(-20);
+      forward(0.25);
+    }
+    float diff = Sensor_Distances[4] - Sensor_Distances[3];
+    float angle = ((atan2(diff, (float) 11)) * 180 / Pi); //calculate angle of POI
+    Serial.println(angle);
+    spin(-angle);
+    forward(0.5);
+    return;
+  }
+  //Runs if there is a wall in front of the robot
+  else if (Sensor_Distances[0] != 0) {
+    digitalWrite(redLED, HIGH);//turn off red LED
+    digitalWrite(grnLED, HIGH);//turn on green LED
+    digitalWrite(ylwLED, LOW);//turn off yellow LED
+    //Checks which wall we were on before the turn
+    if (wall_state == 2) {
+      Serial.println("Right turn");
+      spin(-90);
+      forward(0.5);
+      return;
+    } else {
+      Serial.println("Left turn");
+      spin(90);
+      forward(0.5);
+    }
+  }
+  //Check for blind turn
+  else if (Sensor_Distances[0] == 0 && Sensor_Distances[2] == 0 && Sensor_Distances[3] == 0) {
+    if (wall_state == 2) {
+      Serial.println("Blind Left turn");
+      forward(0.5);
+      dock_state = 1;
+      wall_state = 0;
+      return;
+    } else if (wall_state == 3) {
+      Serial.println("Blind Right turn");
+      forward(0.5);
+      dock_state = 1;
+      return;
+    } 
+  }
 }
 
 void readLight() {
@@ -1109,28 +1140,29 @@ void readLight() {
 }
 
 void Love(){
-  robo_state = 2;
   readLight();
-  int minSpeed = 500;
-  int maxSpeed = 100;
-  int maxLightL = 750;
-  int maxLightR = 550;
-  int light_threshold = 150;
+  int minSpeed = 100;
+  int maxSpeed = 1000;
+  int maxLightL = 850;
+  int maxLightR = 850;
+  int light_threshold = 350;
   float minDist = 0.5;
   
   int distLightL = (minDist*leftLight)/maxLightL;
-  int speedL = (minSpeed*maxLightL)/leftLight;
+  int speedL = (maxSpeed*maxLightL)/700;
   // Serial.print("Left Speed = ");
   // Serial.print(speedL);
   int distLightR = (minDist*rightLight)/maxLightR;
-  int speedR = (minSpeed*maxLightR)/rightLight;
+  int speedR = (maxSpeed*maxLightR)/700;
   // Serial.print(" Right Speed = ");
   // Serial.println(speedR);
   //check if we are too close to either sensor
    if(leftLight > maxLightL - 150){
+    dock_state = 4;
     return;
   }
   if (rightLight > maxLightR - 100){
+    dock_state = 4;
     return;
   }
 
@@ -1141,38 +1173,44 @@ void Love(){
     speedR = maxSpeed;
   }
   //Move forward at set speed if light threshold is met
-  if(leftLight > light_threshold){
+  if(leftLight > light_threshold && rightLight <= light_threshold){
+    robo_state = 2;
     moveR(0.1, speedL);
   }
-  if (rightLight > light_threshold){
+  if (rightLight > light_threshold && leftLight <= light_threshold){
+    robo_state = 2;
     moveL(0.1, speedR);
   }
+  if(leftLight > light_threshold && rightLight > light_threshold) {
+    robo_state = 1;
+    moveL(0.1, speedR);
+    moveR(0.1, speedL);
+  }
+  //Serial.println
   steppers.runSpeedToPosition();
 }
 
 void Fear(){
-  robo_state = 2;
   readLight();
   int minSpeed = 500;
-  int maxSpeed = 100;
+  int maxSpeed = 750;
   int maxLightL = 750;
   int maxLightR = 550;
-  int light_threshold = 150;
   float minDist = 0.5;
   
   int distLightL = (minDist*leftLight)/maxLightL;
-  int speedL = (minSpeed*maxLightL)/leftLight;
+  int speedL = (maxSpeed*maxLightL)/700;
   // Serial.print("Left Speed = ");
   // Serial.print(speedL);
   int distLightR = (minDist*rightLight)/maxLightR;
-  int speedR = (minSpeed*maxLightR)/rightLight;
+  int speedR = (maxSpeed*maxLightR)/700;
   // Serial.print(" Right Speed = ");
   // Serial.println(speedR);
   //check if we are too close to either sensor
    if(leftLight > maxLightL - 150){
     return;
   }
-  if (rightLight > maxLightR - 100){
+  if (rightLight > maxLightR){
     return;
   }
 
@@ -1183,13 +1221,77 @@ void Fear(){
     speedR = maxSpeed;
   }
   //Move forward at set speed if light threshold is met
-  if(leftLight > light_threshold){
+  if(leftLight > light_threshold && rightLight <= light_threshold){
+    robo_state = 2;
     moveL(0.1, speedL);
   }
-  if (rightLight > light_threshold){
+  if (rightLight > light_threshold && leftLight <= light_threshold){
+    robo_state = 2;
+    moveR(0.1, speedR);
+  } if(leftLight > light_threshold && rightLight > light_threshold) {
+    robo_state = 1;
+    moveL(0.1, speedL);
     moveR(0.1, speedR);
   }
+  Serial.println(speedL);
+  Serial.println(speedR);
   steppers.runSpeedToPosition();
+}
+
+  void Explorer() {
+    readLight();
+    if(leftLight >= light_threshold || rightLight >= light_threshold) {
+      Fear();
+    } else {
+      randomWander();
+    }
+  }
+
+void Docking() {
+  Serial.println(dock_state);
+  readLight();
+  readSensors();
+  if(dock_state == 0) {
+    if(leftLight >= light_threshold) {
+      spin(45);
+      forward(0.75);
+      spin(45);
+      dock_state = 1;
+    } 
+    else if(rightLight >= light_threshold) {
+      spin(-45);
+      forward(0.75);
+      spin(-45);
+      dock_state = 1;
+    }
+    else {
+      wallFollow();
+    }
+  }
+  else if(dock_state == 1) {
+    if (Sensor_Distances[0] <= wall_dist || Sensor_Distances[2] <= wall_dist || Sensor_Distances[3] <= wall_dist)
+    for (int i = 0; i < 6; i++) {
+      if (Sensor_Distances[i] <= wall_dist && Sensor_Distances[i] != 0) {
+        dock_state = 2;
+      }
+    }
+    if(dock_state == 1) {
+      Love();
+    }
+  }
+  else if(dock_state == 2) {
+    Obstacle_Avoidance();
+  }
+  else if(dock_state == 3) {
+    reverse(0.5);
+    spin(180);
+    delay(5000);
+    dock_state = 4;
+  }
+  else if(dock_state == 4) {
+    Serial.println("I am too eepy for this one.");
+    delay(1000);
+  }
 }
 
 //// MAIN
@@ -1209,24 +1311,8 @@ void setup() {
   Serial.begin(baudrate);     //start serial monitor communication
   Serial.println("Robot starting...Put ON TEST STAND");
   delay(pauseTime); //always wait 2.5 seconds before the robot moves
-  pivot(90);
-  Serial.print("Theta = ");
-  Serial.print(robo_theta);
-  Serial.print(" X = ");
-  Serial.print(robo_x);
-  Serial.print(" Y = ");
-  Serial.println(robo_y);
-  pivot(90);
-  Serial.print("Theta = ");
-  Serial.print(robo_theta);
-  Serial.print(" X = ");
-  Serial.print(robo_x);
-  Serial.print(" Y = ");
-  Serial.println(robo_y);
-
-  
 }
 
 void loop() {
-
+ Docking();
 }
