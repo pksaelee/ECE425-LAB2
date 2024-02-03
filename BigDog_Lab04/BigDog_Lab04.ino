@@ -151,12 +151,15 @@ int wall_state = 1;
 float robo_theta = 0;
 float robo_x = 0;
 float robo_y = 0;
+float return_theta = 0;
+float return_x = 0;
+float return_y = 0;
 int robo_state = 0;
 //0 = forward, 1 = one wheel turn, 2 = spin
 
 //Docking Data
 int dock_state = 0;
-int light_threshold = 350;
+int light_threshold = 150;
 //0 = initial wall follow, 1 = light follow, 2 = obstacle avoidance, 3 = dock, 4 = returning home
 
 //interrupt function to count left encoder tickes
@@ -296,7 +299,12 @@ void moveR(float distance, int speed) {
     robo_y = robo_y + cur_dist*sin((robo_theta + cur_theta/2)*Pi/180);
     robo_theta = robo_theta + cur_theta;
   }
-
+  if(robo_theta > 2*Pi) {
+    robo_theta = robo_theta - 2*Pi;
+  }
+  if(robo_theta < -2*Pi) { 
+    robo_theta = robo_theta + 2*Pi;
+  }
   stepperRight.moveTo(steps);//move number of steps forward relative to current position
   stepperRight.setSpeed(speed);//set right motor speed
   stepperRight.runSpeedToPosition();//move right motor
@@ -325,7 +333,12 @@ void moveL(float distance, int speed) {
     robo_y = robo_y + cur_dist*sin((robo_theta - cur_theta/2)*Pi/180);
     robo_theta = robo_theta - cur_theta;
   }
-
+  if(robo_theta > 2*Pi) {
+    robo_theta = robo_theta - 2*Pi;
+  }
+  if(robo_theta < -2*Pi) { 
+    robo_theta = robo_theta + 2*Pi;
+  }
   stepperLeft.moveTo(steps);//move number of steps forward relative to current position
   stepperLeft.setSpeed(speed);//set left motor speed
   stepperLeft.runSpeedToPosition();//move right motor
@@ -1131,38 +1144,29 @@ readSensors();
 void readLight() {
   leftLight = analogRead(1);
   rightLight = analogRead(2);
-  Serial.print("Left Light = ");
-  Serial.print(leftLight);
-  Serial.print(", ");
-  Serial.print("Right Light = ");
-  Serial.println(rightLight);
 //  delay(1000);
 }
 
 void Love(){
   readLight();
   int minSpeed = 100;
-  int maxSpeed = 1000;
-  int maxLightL = 850;
-  int maxLightR = 850;
-  int light_threshold = 350;
+  int maxSpeed = 750;
+  int maxLightL = 550;
+  int maxLightR = 650;
+  int light_threshold = 150;
   float minDist = 0.5;
   
   int distLightL = (minDist*leftLight)/maxLightL;
   int speedL = (maxSpeed*maxLightL)/700;
-  // Serial.print("Left Speed = ");
-  // Serial.print(speedL);
   int distLightR = (minDist*rightLight)/maxLightR;
   int speedR = (maxSpeed*maxLightR)/700;
-  // Serial.print(" Right Speed = ");
-  // Serial.println(speedR);
   //check if we are too close to either sensor
-   if(leftLight > maxLightL - 150){
-    dock_state = 4;
+   if(leftLight > 450){
+    dock_state = 3;
     return;
   }
-  if (rightLight > maxLightR - 100){
-    dock_state = 4;
+  if (rightLight > 400){
+    dock_state = 3;
     return;
   }
 
@@ -1186,7 +1190,6 @@ void Love(){
     moveL(0.1, speedR);
     moveR(0.1, speedL);
   }
-  //Serial.println
   steppers.runSpeedToPosition();
 }
 
@@ -1200,12 +1203,8 @@ void Fear(){
   
   int distLightL = (minDist*leftLight)/maxLightL;
   int speedL = (maxSpeed*maxLightL)/700;
-  // Serial.print("Left Speed = ");
-  // Serial.print(speedL);
   int distLightR = (minDist*rightLight)/maxLightR;
   int speedR = (maxSpeed*maxLightR)/700;
-  // Serial.print(" Right Speed = ");
-  // Serial.println(speedR);
   //check if we are too close to either sensor
    if(leftLight > maxLightL - 150){
     return;
@@ -1233,19 +1232,92 @@ void Fear(){
     moveL(0.1, speedL);
     moveR(0.1, speedR);
   }
-  Serial.println(speedL);
-  Serial.println(speedR);
   steppers.runSpeedToPosition();
 }
 
-  void Explorer() {
-    readLight();
-    if(leftLight >= light_threshold || rightLight >= light_threshold) {
-      Fear();
-    } else {
-      randomWander();
-    }
+void Explorer() {
+  readLight();
+  int minSpeed = 500;
+  int maxSpeed = 750;
+  int maxLightL = 750;
+  int maxLightR = 550;
+  float minDist = 0.5;
+  
+  int distLightL = (minDist*leftLight)/maxLightL;
+  int speedL = (maxSpeed*maxLightL)/700;
+  int distLightR = (minDist*rightLight)/maxLightR;
+  int speedR = (maxSpeed*maxLightR)/700;
+  //check if we are too close to either sensor
+   if(leftLight > maxLightL - 150){
+    return;
   }
+  if (rightLight > maxLightR){
+    return;
+  }
+
+  //Set a cap on the speeds
+  if(speedL > maxSpeed) {
+    speedL = maxSpeed;
+  } if(speedR > maxSpeed) {
+    speedR = maxSpeed;
+  }
+  //Move forward at set speed if light threshold is met
+  moveL(0.1, speedL);
+  moveR(0.1, speedR);
+  steppers.runSpeedToPosition();
+}
+
+void Aggressor() {
+  readLight();
+  int minSpeed = 100;
+  int maxSpeed = 750;
+  int maxLightL = 550;
+  int maxLightR = 650;
+  int light_threshold = 150;
+  int minDist = 1;
+  robo_state = 2;
+  
+  int distLightL = (minDist*leftLight)/maxLightL;
+  int speedL = (maxSpeed*maxLightL)/700;
+  int distLightR = (minDist*rightLight)/maxLightR;
+  int speedR = (maxSpeed*maxLightR)/700;
+  if(leftLight > maxLightL - 100) {
+    dock_state = 4;
+    return;
+  }
+  if (rightLight > maxLightR - 100) {
+    dock_state = 4;
+    return;
+  }
+
+  //Set a cap on the speeds
+  if(speedL > maxSpeed) {
+    speedL = maxSpeed;
+  } if(speedR > maxSpeed) {
+    speedR = maxSpeed;
+  }
+  //Move forward at set speed if light threshold is met
+  moveR(0.1*leftLight/maxLightL, speedR);
+  moveL(0.1*rightLight/maxLightR, speedL);
+  steppers.runSpeedToPosition();
+}
+
+void homing() {
+  float target_x = robo_x - return_x;
+  float target_y = -robo_y - return_y;
+  double target_theta = atan2((double) target_x,(double) target_y);
+  spin((-robo_theta - (float) target_theta) - 90);
+  forward(0.5);
+}
+
+void hhoming() {
+  readSensors();
+  forward(0.5);
+  if(Sensor_Distances[0]) {
+    spin(-90);
+    dock_state = 0;
+  }
+}
 
 void Docking() {
   Serial.println(dock_state);
@@ -1253,30 +1325,38 @@ void Docking() {
   readSensors();
   if(dock_state == 0) {
     if(leftLight >= light_threshold) {
-      spin(45);
+      spin(55);
       forward(0.75);
-      spin(45);
+      spin(15);
       dock_state = 1;
+      return_x = robo_x;
+      return_y = robo_y;
+      return_theta = robo_theta;
     } 
     else if(rightLight >= light_threshold) {
-      spin(-45);
+      spin(-55);
       forward(0.75);
-      spin(-45);
+      spin(-15);
       dock_state = 1;
+      return_x = robo_x;
+      return_y = robo_y;
+      return_theta = robo_theta;
     }
     else {
-      wallFollow();
+      Obstacle_Avoidance();
     }
   }
   else if(dock_state == 1) {
-    if (Sensor_Distances[0] <= wall_dist || Sensor_Distances[2] <= wall_dist || Sensor_Distances[3] <= wall_dist)
-    for (int i = 0; i < 6; i++) {
-      if (Sensor_Distances[i] <= wall_dist && Sensor_Distances[i] != 0) {
+    if (Sensor_Distances[0] <= wall_dist || Sensor_Distances[2] <= wall_dist || Sensor_Distances[3] <= wall_dist) {
+      if (Sensor_Distances[2] <= wall_dist && Sensor_Distances[2] != 0) {
         dock_state = 2;
       }
-    }
-    if(dock_state == 1) {
-      Love();
+      else if (Sensor_Distances[3] <= wall_dist && Sensor_Distances[3] != 0) {
+        dock_state = 2;
+      }
+      if(dock_state == 1) {
+        Love();
+      }
     }
   }
   else if(dock_state == 2) {
@@ -1289,8 +1369,49 @@ void Docking() {
     dock_state = 4;
   }
   else if(dock_state == 4) {
-    Serial.println("I am too eepy for this one.");
-    delay(1000);
+    if (Sensor_Distances[2] <= wall_dist && Sensor_Distances[2] != 0) {
+      Obstacle_Avoidance();
+    }
+    else if (Sensor_Distances[3] <= wall_dist && Sensor_Distances[3] != 0) {
+      Obstacle_Avoidance();
+    }
+    else if (abs(robo_x - return_x) < 0.5 && abs(robo_y - return_y) < 0.5) {
+      spin(90);
+      dock_state = 0;
+    }
+    else {
+      hhoming();
+    }
+  }
+}
+
+void TPF(String string) {
+  int step = 0;
+  for (int i = 0; i <= string.length(); i++) {
+    while(step == i) {
+      readSensors();
+      if(string.charAt(i+1) == 'R') {
+        if(Sensor_Distances[3] != 0) {
+          step++;
+          spin(-90);
+        }
+      }
+      else if(string.charAt(i+1) == 'L') {
+        if(Sensor_Distances[2] != 0) {
+          step++;
+          spin(90);
+        }
+      }
+      else if(string.charAt(i+1) == 'T') {
+        if(Sensor_Distances[0] != 0) {
+          step++;
+          return;
+        }
+      }
+      if(step == i) {
+        forward(0.5);
+      }
+    }
   }
 }
 
@@ -1314,5 +1435,5 @@ void setup() {
 }
 
 void loop() {
- Docking();
+  Docking();
 }
