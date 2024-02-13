@@ -1415,6 +1415,80 @@ void TPF(String string) {
   }
 }
 
+void delimiter(String list){
+  String newList[32];
+  int count = 0;
+
+  while(list.length() > 0){
+    int i = list.indexOf(' ');
+    // Checks if no space is found
+    if(i == -1){
+      newList[count++] = list;
+      break;
+    } else {
+      newList[count++] = list.substring(0,i);
+      list = list.substring(i+1);
+    }
+  }
+  for(int i = 0; i < count; i++){
+    Serial.print(i);
+    Serial.print(": \"");
+    Serial.print(newList[i]);
+    Serial.println("\"");
+  }
+}
+
+String x;
+void GUI(){
+  // see if there's incoming serial data:
+  if (Serial.available() > 0) {
+    // read the oldest byte in the serial buffer:
+    x = Serial.readString();
+    // checks if string received is int
+    if (isDigit(x.charAt(0))){
+      // MAPPING
+      if(x.length() == 16){
+         digitalWrite(redLED, HIGH);
+         digitalWrite(ylwLED, HIGH);//turn off yellow LED
+         digitalWrite(grnLED, LOW);//turn off green LED
+      }
+      // PATH PLANNING
+      if(x.length() == 7){
+         digitalWrite(redLED, LOW);
+         digitalWrite(ylwLED, HIGH);//turn off yellow LED
+         digitalWrite(grnLED, HIGH);//turn off green LED        
+      }
+      // SENSORS
+      if(x.length() == 6){
+         digitalWrite(redLED, HIGH);
+         digitalWrite(ylwLED, HIGH);//turn off yellow LED
+         digitalWrite(grnLED, HIGH);//turn off green LED        
+      }
+    }
+    if (x == "PL") {
+      pivot(90);
+    }
+    if (x == "PR") {
+      pivot(-90);
+    }
+    if (x == "F") {
+      forward(0.5);
+    }
+    if (x == "B") {
+      reverse(0.5);
+    }
+    if (x == "SL") {
+      spin(90);
+    }
+    if (x == "SR") {
+      spin(-90);
+    }
+    else{
+      TPF(x); 
+    }   
+  }
+}
+
 //// MAIN
 void setup() {
   int baudrate = 9600; //serial monitor baud rate'

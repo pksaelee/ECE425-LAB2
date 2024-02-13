@@ -20,6 +20,7 @@ def enter(event):
     for entry in entries:
         x = entry.get()
         to_arduino += x
+        to_arduino += " "
     write_read(to_arduino)
 ##    print(to_arduino)
     
@@ -44,14 +45,17 @@ def start():
     for pos in entries_pos:
         x = pos.get()
         to_arduino += x
+        to_arduino += " "
 ##        print(pos.get())
     for start in entries_start:
         x = start.get()
         to_arduino += x
+        to_arduino += " "
 ##        print(start.get())
     for end in entries_end:
         x = end.get()
         to_arduino += x
+        to_arduino += " "
 ##        print(end.get())
     write_read(to_arduino)
 
@@ -117,6 +121,7 @@ def sense():
     for sensor in entries_sens:
         x = sensor.get()
         to_arduino += x
+        to_arduino += " "
 ##        print(sensor.get())
     write_read(to_arduino)
 
