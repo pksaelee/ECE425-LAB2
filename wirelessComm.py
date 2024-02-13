@@ -6,8 +6,8 @@ window = tk.Tk()
 arduino = serial.Serial(port='COM3',baudrate=9600,timeout=0.1)
 
 def write_read(x):
-    arduino.write(bytes(x,'utf-8'))
-    time.sleep(3)
+    arduino.write(x.encode())
+    time.sleep(0.5)
     data = arduino.readline()
     return data
 
@@ -21,6 +21,7 @@ def enter(event):
         x = entry.get()
         to_arduino += x
     write_read(to_arduino)
+##    print(to_arduino)
     
 frame1 = tk.LabelFrame(window)
 frame1.grid(row=0,column=0)
@@ -39,12 +40,20 @@ entries_start = []
 entries_end = []
 
 def start():
+    to_arduino = ""
     for pos in entries_pos:
-        print(pos.get())
+        x = pos.get()
+        to_arduino += x
+##        print(pos.get())
     for start in entries_start:
-        print(start.get())
+        x = start.get()
+        to_arduino += x
+##        print(start.get())
     for end in entries_end:
-        print(end.get())
+        x = end.get()
+        to_arduino += x
+##        print(end.get())
+    write_read(to_arduino)
 
 frame2 = tk.LabelFrame(window,text="Positioning:")
 frame2.grid(row=0,column=1)
@@ -72,17 +81,23 @@ start.grid(row=6,column=1)
 
 ## CONTROLLER
 def pivotL():
-    print("Pivot Left")
+    write_read("PL")
+##        print("Pivot Left")
 def forward():
-    print("Forward")
+    write_read("F")
+##        print("Forward")
 def pivotR():
-    print("Pivot Right")
+    write_read("PR")
+##        print("Pivot Right")
 def spinL():
-    print("Spin Left")
+    write_read("SL")
+##        print("Spin Left")
 def spinR():
-    print("Spin Right")
+    write_read("SR")
+##        print("Spin Right")
 def backwards():
-    print("Backwards")
+    write_read("B")
+##        print("Backwards")
 
 frame3 = tk.LabelFrame(window, text="Controller")
 frame3.grid(row=1,column=0)
@@ -98,8 +113,12 @@ frame4 = tk.LabelFrame(window,text="Sensors")
 frame4.grid(row=1,column=1)
 
 def sense():
+    to_arduino = ""
     for sensor in entries_sens:
-        print(sensor.get())
+        x = sensor.get()
+        to_arduino += x
+##        print(sensor.get())
+    write_read(to_arduino)
 
 ## list to tract value for sensors
 entries_sens = []
@@ -128,10 +147,10 @@ button.pack()
 
 window.mainloop()
  
-
-while True:
-    num = input("Enter number: ")
-    value = write_read(num)
-    print(value)
+##
+##while True:
+##    num = input("Enter number: ")
+##    value = write_read(num)
+##    print(value)
 
 
