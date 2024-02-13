@@ -3,7 +3,7 @@ import time
 import tkinter as tk
 
 window = tk.Tk()
-arduino = serial.Serial(port='COM3',baudrate=9600,timeout=0.1)
+arduino = serial.Serial(port='COM5',baudrate=9600,timeout=0.1)
 
 def write_read(x):
     arduino.write(x.encode())
@@ -110,7 +110,7 @@ pivotr = tk.Button(frame3,text="Pivot Right",command=pivotR,height=3,width=10).g
 forw = tk.Button(frame3,text="Forward",command=forward,height=3,width=10).grid(row=0,column=2,padx=5,pady=5)
 back = tk.Button(frame3,text="Backwards",command=backwards,height=3,width=10).grid(row=1,column=0,padx=5,pady=5)
 spinl = tk.Button(frame3,text="Spin Left",command=spinL,height=3,width=10).grid(row=1,column=2,padx=5,pady=5)
-spinr = tk.Button(frame3,text="Spin Left",command=spinR,height=3,width=10).grid(row=2,column=1,padx=5,pady=5)
+spinr = tk.Button(frame3,text="Spin Right",command=spinR,height=3,width=10).grid(row=2,column=1,padx=5,pady=5)
 
 ## SENSORS
 frame4 = tk.LabelFrame(window,text="Sensors")

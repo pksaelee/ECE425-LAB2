@@ -1414,29 +1414,32 @@ void TPF(String string) {
     }
   }
 }
-
-void delimiter(String list){
-  String newList[32];
-  int count = 0;
-
-  while(list.length() > 0){
-    int i = list.indexOf(' ');
-    // Checks if no space is found
-    if(i == -1){
-      newList[count++] = list;
-      break;
-    } else {
-      newList[count++] = list.substring(0,i);
-      list = list.substring(i+1);
-    }
-  }
-  for(int i = 0; i < count; i++){
-    Serial.print(i);
-    Serial.print(": \"");
-    Serial.print(newList[i]);
-    Serial.println("\"");
-  }
-}
+//int intList[16];
+//void delimiter(String list){
+//  String newList[32];
+////  int intList[size];
+//  int count = 0;
+//
+//  while(list.length() > 0){
+//    int i = list.indexOf(' ');
+//    // Checks if no space is found
+//    if(i == -1){
+//      newList[count++] = list;
+//      break;
+//    } else {
+//      newList[count++] = list.substring(0,i);
+//      list = list.substring(i+1);
+//    }
+//  }
+//  for (int i = 0; i < count; i++){
+//    intList[i] = newList[i].toInt();
+//  }
+//  return intList;
+////  for(int i = 0; i < count; i++){
+////    Serial.print(newList[i]);
+////  }
+////  Serial.println();
+//}
 
 String x;
 void GUI(){
@@ -1446,42 +1449,62 @@ void GUI(){
     x = Serial.readString();
     // checks if string received is int
     if (isDigit(x.charAt(0))){
+//      int *comm = delimiter(x, x.length());
+      // delimits string to make array of integer
+      String newList[32];
+      int intList[x.length()];
+      int count = 0;
+    
+      while(x.length() > 0){
+        int i = x.indexOf(' ');
+        // Checks if no space is found
+        if(i == -1){
+          newList[count++] = x;
+          break;
+        } else {
+          newList[count++] = x.substring(0,i);
+          x = x.substring(i+1);
+        }
+      }
+      for (int i = 0; i < count; i++){
+        intList[i] = newList[i].toInt();
+      }
       // MAPPING
-      if(x.length() == 16){
+      if(sizeof(intList) == 16){
          digitalWrite(redLED, HIGH);
          digitalWrite(ylwLED, HIGH);//turn off yellow LED
          digitalWrite(grnLED, LOW);//turn off green LED
       }
       // PATH PLANNING
-      if(x.length() == 7){
+      if(sizeof(intList) == 7){
          digitalWrite(redLED, LOW);
-         digitalWrite(ylwLED, HIGH);//turn off yellow LED
-         digitalWrite(grnLED, HIGH);//turn off green LED        
-      }
-      // SENSORS
-      if(x.length() == 6){
-         digitalWrite(redLED, HIGH);
          digitalWrite(ylwLED, HIGH);//turn off yellow LED
          digitalWrite(grnLED, HIGH);//turn off green LED        
       }
     }
     if (x == "PL") {
       pivot(90);
+      return;
     }
     if (x == "PR") {
       pivot(-90);
+      return;
     }
     if (x == "F") {
       forward(0.5);
+      return;
     }
     if (x == "B") {
       reverse(0.5);
+      return;
     }
     if (x == "SL") {
       spin(90);
+      return;
     }
     if (x == "SR") {
       spin(-90);
+      return;
     }
     else{
       TPF(x); 
@@ -1509,5 +1532,7 @@ void setup() {
 }
 
 void loop() {
-  Docking();
+//  Docking();
+  
+//  GUI();
 }
