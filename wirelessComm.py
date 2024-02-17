@@ -3,7 +3,7 @@ import time
 import tkinter as tk
 
 window = tk.Tk()
-arduino = serial.Serial(port='COM5',baudrate=9600,timeout=0.1)
+arduino = serial.Serial(port='COM6',baudrate=9600,timeout=0.1)
 
 def write_read(x):
     arduino.write(x.encode())

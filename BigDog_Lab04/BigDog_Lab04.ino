@@ -1444,9 +1444,9 @@ void TPF(String string) {
 String x;
 void GUI(){
   // see if there's incoming serial data:
-  if (Serial.available() > 0) {
+  if (Serial1.available() > 0) {
     // read the oldest byte in the serial buffer:
-    x = Serial.readString();
+    x = Serial1.readString();
     // checks if string received is int
     if (isDigit(x.charAt(0))){
 //      int *comm = delimiter(x, x.length());
@@ -1526,7 +1526,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ltEncoder), LwheelSpeed, CHANGE);    //init the interrupt mode for the left encoder
   attachInterrupt(digitalPinToInterrupt(rtEncoder), RwheelSpeed, CHANGE);   //init the interrupt mode for the right encoder
 
-  Serial.begin(baudrate);     //start serial monitor communication
+  Serial.begin(baudrate);
+  Serial1.begin(baudrate);     //start serial monitor communication
   Serial.println("Robot starting...Put ON TEST STAND");
   delay(pauseTime); //always wait 2.5 seconds before the robot moves
 }
@@ -1534,5 +1535,5 @@ void setup() {
 void loop() {
 //  Docking();
   
-//  GUI();
+  GUI();
 }
