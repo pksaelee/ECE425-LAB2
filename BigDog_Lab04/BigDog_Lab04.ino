@@ -369,33 +369,6 @@ int convertFeetToSteps(float measurement, int direction) {
 
 }
 
-//int convert(float measurement, int dir){
-// /* ENCODER FEEDBACK
-//   * One Rotation in Steps = 800
-//   * One Rotation = 40 (ALL match)
-//   * Half Rotation = 21 L 20 R (FWD/REV match)
-//   * Quarter Rotation = 10 (ALL match)
-//   * Two Rotation = 80 (ALL match)
-//   *
-//   * One Foot: Ticks = 47 L 46 R Steps = 896
-//   * One Foot: Ticks = 45 L 46 R REV Steps = -896
-//   * Two Feet: Ticks = 89 (ALL match)   Steps = 1792
-// */
-//  float steps = 896;
-//  float stpPerTicFwd = 896.0/47.0;
-//  float stpPerTicRev = 896.0/45.0;
-//  float ticPerFootFwd = 47.0;
-//  float ticPerFootRev = 45.0;
-//
-//  if(dir == 0){
-//    int converted = steps*measurement;
-//    return converted;
-//  } else{
-//    int converted = steps*measurement;
-//    return converted;
-//  }
-//}
-
 /*
   The pivot function will use AccelStepper to move one motor forward and halt the other motor to turn the robot
   based on the angle given
@@ -1443,8 +1416,10 @@ void TPF(String string) {
 
 String x;
 void GUI(){
+  readSensors();
   // see if there's incoming serial data:
   if (Serial1.available() > 0) {
+    readSensors();
     // read the oldest byte in the serial buffer:
     x = Serial1.readString();
     // checks if string received is int
@@ -1506,6 +1481,35 @@ void GUI(){
       spin(-90);
       return;
     }
+//    if ( x == "s0"){
+//      Serial1.print(Sensor_Distances[4]);
+//    }
+//    if (x == "s1"){
+//      Serial1.print(Sensor_Distances[0]);
+//    }
+//    if (x == "s2"){
+//      Serial1.print(Sensor_Distances[5]);
+//    }
+//    if (x == "s3"){
+//      Serial1.print(Sensor_Distances[1]);
+//    }
+//    if (x == "s4"){
+//      Serial1.print(Sensor_Distances[2]);
+//    }
+//    if (x == "s5"){
+//      Serial1.print(Sensor_Distances[3]);
+//    }
+    if (x == "S"){
+//      readSensors();
+      String data = "";
+      for(int i = 0; i < 6; i++){
+        data = data + i + ": "+ String(Sensor_Distances[i]) + " ";
+      }
+      Serial1.print(data); 
+//      Serial.print(data);
+//      delay(500); 
+      return;
+    }
     else{
       TPF(x); 
     }   
@@ -1534,6 +1538,11 @@ void setup() {
 
 void loop() {
 //  Docking();
-  
+  readSensors();
+//      String data;
+//      for(int i = 0; i < 6; i++){
+//        data = data + String(Sensor_Distances[i]) + ",";
+//      }
+//      Serial.print(data);
   GUI();
 }

@@ -117,27 +117,78 @@ frame4 = tk.LabelFrame(window,text="Sensors")
 frame4.grid(row=1,column=1)
 
 def sense():
-    to_arduino = ""
-    for sensor in entries_sens:
-        x = sensor.get()
-        to_arduino += x
-        to_arduino += " "
-##        print(sensor.get())
-    write_read(to_arduino)
+##    to_arduino = ""
+##    for sensor in entries_sens:
+##        x = sensor.get()
+##        to_arduino += x
+##        to_arduino += " "
+####        print(sensor.get())
+##    write_read(to_arduino)
+##    s0.delete("1.0","end")
+##    s1.delete("1.0","end")
+##    s2.delete("1.0","end")
+##    s3.delete("1.0","end")
+##    s4.delete("1.0","end")
+##    s5.delete("1.0","end")
+    s.delete("1.0","end")
+    
+    sWR = "S"
+    arduino.write(bytes(sWR, 'utf-8'))
+    
+    try:
+##        s0.delete("1.0","end")
+##        s1.delete("1.0","end")
+##        s2.delete("1.0","end")
+##        s3.delete("1.0","end")
+##        s4.delete("1.0","end")
+##        s5.delete("1.0","end")
+        sRD = arduino.readline()
+        sRDString = sRD.decode('utf-8')
+##        sRDList = list(sRDString.split(","))
+        print(sRD)
+        print(sRDString)
+##        print(sRDList)
+##        print(sRDList[4])
+##        s0.insert("end",sRDList[4])
+##        s1.insert("end",SRDList[0])
+##        s2.insert("end",sRDList[5])
+##        s3.insert("end",SRDList[1])
+##        s4.insert("end",sRDList[2])
+##        s5.insert("end",SRDList[3])
+        s.insert("end",sRDString)
+    except:
+        s0.insert("end","0")
+    
 
-## list to tract value for sensors
-entries_sens = []
+## list to track value for sensors
+##entries_sens = []
 
-for i in range(3):
-    for j in range(3):
-        if((i == 1 and j == 1) or (i == 2 and j == 0) or (i == 2 and j == 2)):
-            continue
-        sensor = tk.Entry(frame4, width=10)
-        sensor.grid(row=i,column=j,padx=5,pady=5)
-        entries_sens.append(sensor)
+##for i in range(3):
+##    for j in range(3):
+##        if((i == 1 and j == 1) or (i == 2 and j == 0) or (i == 2 and j == 2)):
+##            continue
+####        sensor = tk.Entry(frame4, width=10)
+##        sensor = tk.Text(frame4, width = 5, height = 1)
+##        sensor.grid(row=i,column=j,padx=5,pady=5)
+####        entries_sens.append(sensor)
+    
+##s0 = tk.Text(frame4, width = 5, height = 1)
+##s0.grid(row=0,column=0,padx=5,pady=5)
+##s1 = tk.Text(frame4, width = 5, height = 1)
+##s1.grid(row=0,column=1,padx=5,pady=5)
+##s2 = tk.Text(frame4, width = 5, height = 1)
+##s2.grid(row=0,column=2,padx=5,pady=5)
+##s3 = tk.Text(frame4, width = 5, height = 1)
+##s3.grid(row=1,column=0,padx=5,pady=5)
+##s4 = tk.Text(frame4, width = 5, height = 1)
+##s4.grid(row=1,column=2,padx=5,pady=5)
+##s5 = tk.Text(frame4, width = 5, height = 1)
+##s5.grid(row=2,column=1,padx=5,pady=5)
+s = tk.Text(frame4, width =35, height = 1)
+s.pack()
 
-run = tk.Button(frame4,text="Start!",command=sense)
-run.grid(row=3,column=1)
+getData = tk.Button(frame4,text="Get Data",command=sense)
+getData.pack()
 
 ## COMMAND
 def run():
